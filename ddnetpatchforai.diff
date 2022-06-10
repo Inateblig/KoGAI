@@ -1,0 +1,411 @@
+diff --git a/src/engine/client/client.cpp b/src/engine/client/client.cpp
+index 6c8ecce98..c49e421b9 100644
+--- a/src/engine/client/client.cpp
++++ b/src/engine/client/client.cpp
+@@ -66,6 +66,28 @@
+ #include "video.h"
+ #endif
+ 
++#include <sys/stat.h>
++#include "fifo.h"
++
++CNetObj_PlayerInput ai_inp;
++int ai_gaveinp;
++int ai_selfkill;
++int ai_availjumps;
++int ai_isdone;
++
++void openfifo(struct fifo *f, const char *mode) {
++	struct stat st;
++
++	if (!(f->fnm = getenv(f->evnm)))
++		ferrf("%s env variable is unset", f->evnm);
++	if (stat(f->fnm, &st))
++		ferrn("stat: %s", f->fnm);
++	if ((st.st_mode & S_IFMT) != S_IFIFO)
++		ferrf("%s: not a fifo file", f->fnm);
++	if (!(f->f = fopen(f->fnm, mode)))
++		ferrn("fopen: %s", f->fnm);
++}
++
+ #include "SDL.h"
+ #ifdef main
+ #undef main
+@@ -81,6 +103,9 @@
+ #include <chrono>
+ #include <thread>
+ 
++const char *prognm;
++struct fifo fifoout, fifoin;
++
+ using namespace std::chrono_literals;
+ 
+ static const ColorRGBA ClientNetworkPrintColor{0.7f, 1, 0.7f, 1.0f};
+@@ -4370,13 +4395,9 @@ int main(int argc, const char **argv)
+ 	bool Silent = false;
+ 	bool RandInitFailed = false;
+ 
+-	for(int i = 1; i < argc; i++)
+-	{
+-		if(str_comp("-s", argv[i]) == 0 || str_comp("--silent", argv[i]) == 0)
+-		{
++	for (int i = 1; i < argc; i++)
++		if (str_comp("-s", argv[i]) == 0 || str_comp("--silent", argv[i]) == 0)
+ 			Silent = true;
+-		}
+-	}
+ 
+ #if defined(CONF_PLATFORM_ANDROID)
+ 	InitAndroid();
+@@ -4550,6 +4571,16 @@ int main(int argc, const char **argv)
+ 		}
+ 	}
+ 
++	prognm = argv[0];
++
++	fifoout.evnm = "FIFOOUT";
++	fifoin.evnm = "FIFOIN";
++
++	openfifo(&fifoout, "w");
++	openfifo(&fifoin, "r");
++
++	setvbuf(fifoin.f, 0, _IOLBF, 0);
++
+ 	// run the client
+ 	dbg_msg("client", "starting...");
+ 	pClient->Run();
+diff --git a/src/game/client/components/controls.cpp b/src/game/client/components/controls.cpp
+index 05d26098e..d1c73f4e5 100644
+--- a/src/game/client/components/controls.cpp
++++ b/src/game/client/components/controls.cpp
+@@ -12,6 +12,7 @@
+ #include <game/client/components/scoreboard.h>
+ #include <game/client/gameclient.h>
+ #include <game/collision.h>
++#include <engine/client/ai.h>
+ 
+ #include <base/vmath.h>
+ 
+@@ -367,6 +368,19 @@ int CControls::SnapInput(int *pData)
+ 			Send = true;
+ 	}
+ 
++	if (ai_gaveinp) {
++		m_InputData[g_Config.m_ClDummy] = ai_inp;
++		Send = true;
++		ai_gaveinp = 0;
++	} else {
++		ai_inp = m_InputData[g_Config.m_ClDummy];
++		Send = false;
++	}
++	if (ai_selfkill) {
++		GameClient()->SendKill(-1);
++		ai_selfkill = 0;
++	}
++
+ 	// copy and return size
+ 	m_LastData[g_Config.m_ClDummy] = m_InputData[g_Config.m_ClDummy];
+ 
+diff --git a/src/game/client/components/hud.cpp b/src/game/client/components/hud.cpp
+index 35e9522e5..c27ea182c 100644
+--- a/src/game/client/components/hud.cpp
++++ b/src/game/client/components/hud.cpp
+@@ -3,6 +3,7 @@
+ #include <engine/graphics.h>
+ #include <engine/shared/config.h>
+ #include <engine/textrender.h>
++#include <engine/client/ai.h>
+ 
+ #include <game/client/animstate.h>
+ #include <game/client/components/scoreboard.h>
+@@ -874,6 +875,7 @@ void CHud::RenderPlayerState(const int ClientID)
+ 		}
+ 		TotalJumpsToDisplay = maximum(minimum(abs(pCharacter->m_Jumps), 10), 0);
+ 		AvailableJumpsToDisplay = maximum(minimum(UnusedJumps, TotalJumpsToDisplay), 0);
++		ai_availjumps = AvailableJumpsToDisplay;
+ 	}
+ 	else
+ 	{
+diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
+index 54e739bdc..b955039b2 100644
+--- a/src/game/client/prediction/entities/character.cpp
++++ b/src/game/client/prediction/entities/character.cpp
+@@ -3,6 +3,14 @@
+ #include <engine/shared/config.h>
+ #include <game/generated/client_data.h>
+ #include <game/mapitems.h>
++#include <game/client/gameclient.h>
++
++#include <stdio.h>
++#include <string.h>
++#include <errno.h>
++#include <poll.h>
++#include <engine/client/ai.h>
++#include <engine/client/fifo.h>
+ 
+ #include "character.h"
+ #include "laser.h"
+@@ -10,6 +18,27 @@
+ 
+ // Character, "physical" player's part
+ 
++bool ColSF(CCollision *pCollision, vec2 Prev, vec2 Pos, int TILE) {
++//	CCollision *pCollision = pClient->Collision();
++	std::list<int> Indices = pCollision->GetMapIndices(Prev, Pos);
++	if(!Indices.empty())
++		for(int &Indice : Indices)
++		{
++			if(pCollision->GetTileIndex(Indice) == TILE)
++				return true;
++			if(pCollision->GetFTileIndex(Indice) == TILE)
++				return true;
++		}
++	else
++	{
++		if(pCollision->GetTileIndex(pCollision->GetPureMapIndex(Pos)) == TILE)
++			return true;
++		if(pCollision->GetFTileIndex(pCollision->GetPureMapIndex(Pos)) == TILE)
++			return true;
++	}
++	return false;
++}
++
+ void CCharacter::SetWeapon(int W)
+ {
+ 	if(W == m_Core.m_ActiveWeapon)
+@@ -555,11 +584,72 @@ void CCharacter::ResetInput()
+ 
+ void CCharacter::Tick()
+ {
++	static int haveread = 2;
++	struct pollfd pfd;
++	char inp[1024], *s;
++
++	pfd.fd = fileno(fifoin.f);
++	pfd.events = POLLIN;
++ckinput:
++	switch (poll(&pfd, 1, 0)) {
++	case 1:
++		if (fgets(inp, sizeof inp, fifoin.f)) {
++//			printf("inp: %s\n", inp);
++			if ((s = strchr(inp, '\n')))
++				*s = 0;
++			sscanf(inp, "%d %d %d %d %d %d %d",
++				&ai_inp.m_Direction,
++				&ai_inp.m_TargetX,
++				&ai_inp.m_TargetY,
++				&ai_inp.m_Jump,
++				&ai_inp.m_Hook,
++				&ai_selfkill,
++				&ai_isdone);
++//			printf("%d %d %d\n",
++//			ai_inp.m_Direction, ai_inp.m_TargetX, ai_inp.m_TargetY);
++			ai_gaveinp = 1;
++			haveread = 2;
++			goto ckinput;
++		}
++		break;
++	case 0:
++		if (haveread < 2)
++			haveread = 0;
++		break;
++	case -1:
++		perrn("poll: %s", fifoin.fnm);
++	}
++
++//	printf("haveread: %d\n", haveread);
++
+ 	DDRaceTick();
+ 
+ 	m_Core.m_Input = m_Input;
+ 	m_Core.Tick(true);
+ 
++	#define V2F "%d %d"
++	#define V2A(V) (int)(V).x, (int)(V).y
++
++	static struct {
++		int freeze;
++		int start;
++		int finish;
++		int selfkill;
++	} rwd;
++
++	rwd.start = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_START)) ? 1 : 0;
++	rwd.finish = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FINISH)) ? 1 : 0;
++	rwd.selfkill = ai_selfkill ? 1 : 0;
++
++	if (haveread) {
++		fprintf(fifoout.f, V2F " " V2F " " V2F " %d %d %d" " %d %d %d\n",
++		V2A(m_Core.m_Pos), V2A(m_Core.m_Vel), V2A(m_Core.m_HookPos),
++		m_Core.m_HookState, m_Core.m_Direction, ai_availjumps,
++		rwd.freeze, rwd.start, rwd.finish);
++		fflush(fifoout.f);
++		haveread = 0;
++	}
++
+ 	// handle Weapons
+ 	HandleWeapons();
+ 
+diff --git a/src/tools/map_diff.cpp b/src/tools/map_diff.cpp
+index 07dab55e0..da0358210 100644
+--- a/src/tools/map_diff.cpp
++++ b/src/tools/map_diff.cpp
+@@ -5,93 +5,59 @@
+ #include <game/gamecore.h>
+ #include <game/mapitems.h>
+ 
+-bool Process(IStorage *pStorage, const char **pMapNames)
++#include <pnglite.h>
++
++#define eprintf(...) fprintf(stderr, __VA_ARGS__);
++
++bool Process(IStorage *pStorage, const char *mapfnm)
+ {
+-	CDataFileReader Maps[2];
+-
+-	for(int i = 0; i < 2; ++i)
+-	{
+-		if(!Maps[i].Open(pStorage, pMapNames[i], IStorage::TYPE_ABSOLUTE))
+-		{
+-			dbg_msg("map_compare", "error opening map '%s'", pMapNames[i]);
+-			return false;
+-		}
++	CDataFileReader Map;
+ 
+-		CDataFileReader *pMap = &Maps[i];
+-		// check version
+-		CMapItemVersion *pVersion = (CMapItemVersion *)pMap->FindItem(MAPITEMTYPE_VERSION, 0);
+-		if(pVersion && pVersion->m_Version != 1)
+-			return false;
++	if (!Map.Open(pStorage, mapfnm, IStorage::TYPE_ABSOLUTE)) {
++		fprintf(stderr, "error opening map '%s'", mapfnm);
++		return false;
+ 	}
+ 
+-	int Start[2], Num[2];
++	// check version
++	CMapItemVersion *pVersion = (CMapItemVersion *)Map.FindItem(MAPITEMTYPE_VERSION, 0);
++	if (pVersion && pVersion->m_Version != 1)
++		return false;
+ 
+-	Maps[0].GetType(MAPITEMTYPE_LAYER, &Start[0], &Num[0]);
+-	Maps[1].GetType(MAPITEMTYPE_LAYER, &Start[1], &Num[1]);
++	int Start, Num;
+ 
+-	// ensure basic layout
+-	if(Num[0] != Num[1])
+-	{
+-		dbg_msg("map_compare", "different layer numbers:");
+-		for(int i = 0; i < 2; ++i)
+-			dbg_msg("map_compare", "  \"%s\": %d layers", pMapNames[i], Num[i]);
+-		return false;
+-	}
++	Map.GetType(MAPITEMTYPE_LAYER, &Start, &Num);
+ 
+-	// preload data
+-	for(int j = 0; j < Num[0]; ++j)
+-	{
+-		CMapItemLayer *pItem[2];
+-		CMapItemLayerTilemap *pTilemap[2];
+-		for(int i = 0; i < 2; ++i)
+-		{
+-			pItem[i] = (CMapItemLayer *)Maps[i].GetItem(Start[i] + j, 0, 0);
+-			pTilemap[i] = (CMapItemLayerTilemap *)pItem[i];
+-			(void)(CTile *) Maps[i].GetData(pTilemap[i]->m_Data);
+-		}
+-	}
++	for (int j = 0; j < Num; ++j) {
++		CMapItemLayer *pItem;
++		CMapItemLayerTilemap *pTilemap;
++		CTile *pTile;
++		char aName[16];
+ 
+-	// compare
+-	for(int j = 0; j < Num[0]; ++j)
+-	{
+-		CMapItemLayer *pItem[2];
+-		for(int i = 0; i < 2; ++i)
+-			pItem[i] = (CMapItemLayer *)Maps[i].GetItem(Start[i] + j, 0, 0);
++		pItem = (CMapItemLayer *)Map.GetItem(Start + j, 0, 0);
++		pTilemap = (CMapItemLayerTilemap *)pItem;
++		if (!(pTilemap->m_Flags & TILESLAYERFLAG_GAME))
++			continue;
++		Map.GetData(pTilemap->m_Data);
+ 
+-		if(pItem[0]->m_Type != LAYERTYPE_TILES)
++		if (pItem->m_Type != LAYERTYPE_TILES)
+ 			continue;
+ 
+-		CMapItemLayerTilemap *pTilemap[2];
+-		char aName[2][16];
++		IntsToStr(pTilemap->m_aName, sizeof(pTilemap->m_aName) / sizeof(int), aName);
+ 
+-		for(int i = 0; i < 2; ++i)
+-		{
+-			pTilemap[i] = (CMapItemLayerTilemap *)pItem[i];
+-			IntsToStr(pTilemap[i]->m_aName, sizeof(pTilemap[i]->m_aName) / sizeof(int), aName[i]);
+-		}
++		pTile = (CTile *)Map.GetData(pTilemap->m_Data);
+ 
+-		if(str_comp(aName[0], aName[1]) != 0 || pTilemap[0]->m_Width != pTilemap[1]->m_Width || pTilemap[0]->m_Height != pTilemap[1]->m_Height)
+-		{
+-			dbg_msg("map_compare", "different tile layers:");
+-			for(int i = 0; i < 2; ++i)
+-				dbg_msg("map_compare", "  \"%s\" (%dx%d)", aName[i], pTilemap[i]->m_Width, pTilemap[i]->m_Height);
+-			return false;
+-		}
+-		CTile *pTile[2];
+-		for(int i = 0; i < 2; ++i)
+-			pTile[i] = (CTile *)Maps[i].GetData(pTilemap[i]->m_Data);
+-
+-		for(int y = 0; y < pTilemap[0]->m_Height; y++)
+-		{
+-			for(int x = 0; x < pTilemap[0]->m_Width; x++)
+-			{
+-				int pos = y * pTilemap[0]->m_Width + x;
+-				if(pTile[0][pos].m_Index != pTile[1][pos].m_Index || pTile[0][pos].m_Flags != pTile[1][pos].m_Flags)
+-				{
+-					dbg_msg("map_compare", "[%d:%s] %dx%d: (index: %d, flags: %d) != (index: %d, flags: %d)", Num[0], aName[0], x, y, pTile[0][pos].m_Index, pTile[0][pos].m_Flags, pTile[1][pos].m_Index, pTile[0][pos].m_Flags);
+-				}
++		int x, y, pos;
++		printf("%d %d\n", pTilemap->m_Width, pTilemap->m_Height);
++		for (y = 0; y < pTilemap->m_Height; y++) {
++			for (x = 0; x < pTilemap->m_Width; x++) {
++				pos = y * pTilemap->m_Width + x;
++//				printf("[%d:%s] %dx%d: (idx: %d, flgs: %d)\n", j, aName,
++//				printf("%d %d %d\n", x, y, pTile[pos].m_Index);
++				printf(&" %d"[!x], pTile[pos].m_Index);
+ 			}
++			printf("\n");
+ 		}
++		break;
+ 	}
+ 
+ 	return true;
+@@ -103,20 +69,17 @@ int main(int argc, const char *argv[])
+ 	std::vector<std::shared_ptr<ILogger>> apLoggers;
+ 	apLoggers.push_back(std::shared_ptr<ILogger>(log_logger_stdout()));
+ 	IOHANDLE LogFile = io_open("map_diff.txt", IOFLAG_WRITE);
+-	if(LogFile)
+-	{
++
++	if (LogFile)
+ 		apLoggers.push_back(std::shared_ptr<ILogger>(log_logger_file(LogFile)));
+-	}
+ 	log_set_global_logger(log_logger_collection(std::move(apLoggers)).release());
+ 
+ 	IStorage *pStorage = CreateLocalStorage();
+ 
+-	if(argc != 3)
+-	{
+-		dbg_msg("usage", "%s map1 map2", argv[0]);
++	if (argc != 2) {
++		eprintf("usage: %s map\n", argv[0]);
+ 		return -1;
+ 	}
+-	int Result = Process(pStorage, &argv[1]) ? 0 : 1;
+-	cmdline_free(argc, argv);
+-	return Result;
++
++	return Process(pStorage, argv[1]);
+ }
