@@ -1,13 +1,13 @@
 #!/bin/sh
 
 mapf=ddnetAI/build/AI4.txt
-n=2
+n=1
 
 for i in $(seq 1 $n)
 do
 	(
 		cd ddnetAI/build
-		FIFOOUT=fout$i FIFOIN=fin$i ./DDNet -f settings_ddnet.cfg
+		FIFOOUT=fout$i FIFOIN=fin$i ./DDNet -f settings_ddnet.cfg > hiha$i
 	) &
 
 	#./ai.py

@@ -2,10 +2,10 @@ import threading
 
 map = []
 
-freezew = 50
-startw = 10
-finishw = 100
-speedw = 0.0005
+freezew = -10
+startw = 0.5
+finishw = 9.0
+speedw = 0.005
 
 fifoi = 0 # fifo index available for use
 lock = threading.Lock()
