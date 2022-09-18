@@ -11,22 +11,6 @@ class vec2:
 		self.x = x
 		self.y = y
 
-
-#class Input:
-#	pp: vec2
-#	vel: vec2
-#	hp: vec2 # hook pos
-#	hs: int # hook state
-#	dir: int
-#	njum: int
-#	def __init__(self):
-#		pp = vec2()
-#		vel = vec2()
-#		hp = vec2()
-#		hs = 0
-#		dir = 0
-#		njum = 0
-
 class Input:
 	pp = vec2()
 	vel = vec2()

@@ -1,3 +1,16 @@
+diff --git a/src/engine/client/ai.h b/src/engine/client/ai.h
+new file mode 100644
+index 000000000..31ed92202
+--- /dev/null
++++ b/src/engine/client/ai.h
+@@ -0,0 +1,7 @@
++#include <game/generated/protocol.h>
++extern CNetObj_PlayerInput ai_inp;
++extern int ai_gaveinp;
++extern int ai_selfkill;
++extern int ai_availjumps;
++extern int ai_isdone;
++extern int ai_CID;
 diff --git a/src/engine/client/client.cpp b/src/engine/client/client.cpp
 index 6c8ecce98..b9b2a396d 100644
 --- a/src/engine/client/client.cpp
@@ -75,6 +88,45 @@ index 6c8ecce98..b9b2a396d 100644
  	// run the client
  	dbg_msg("client", "starting...");
  	pClient->Run();
+diff --git a/src/engine/client/fifo.h b/src/engine/client/fifo.h
+new file mode 100644
+index 000000000..8ab5e53d3
+--- /dev/null
++++ b/src/engine/client/fifo.h
+@@ -0,0 +1,33 @@
++#define eprintf(...) fprintf(stderr, __VA_ARGS__)
++#define perrf(...)\
++	do {\
++		eprintf("%s: ", prognm);\
++		eprintf(__VA_ARGS__);\
++		eprintf("\n");\
++	} while (0)
++#define perrn(...)\
++	do {\
++		eprintf("%s: ", prognm);\
++		eprintf(__VA_ARGS__);\
++		eprintf(": %s", strerror(errno));\
++		eprintf("\n");\
++	} while (0)
++#define ferrf(...)\
++	do {\
++		perrf(__VA_ARGS__);\
++		exit(1);\
++	} while (0)
++#define ferrn(...)\
++	do {\
++		perrn(__VA_ARGS__);\
++		exit(1);\
++	} while (0)
++
++struct fifo {
++	FILE *f;
++	const char *evnm;
++	const char *fnm;
++};
++
++extern const char *prognm;
++extern struct fifo fifoout, fifoin;
 diff --git a/src/game/client/components/controls.cpp b/src/game/client/components/controls.cpp
 index 05d26098e..d1c73f4e5 100644
 --- a/src/game/client/components/controls.cpp
