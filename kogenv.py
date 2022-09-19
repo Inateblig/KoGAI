@@ -75,7 +75,7 @@ vision = 20
 firstobs = [0] * (vision **2 + 9)
 
 alow = np.array([-1, -1, -1, 0, 0])
-ahigh = np.array([1, 1, 1, 2, 2])
+ahigh = np.array([1, 1, 1, 1, 1])
 
 olow = np.array([1] * vision**2 + \
 	[0, 0, \
@@ -121,17 +121,14 @@ class KoGEnv(gym.Env):
 	def step(self, actn):
 		info = {}
 
-#		rwdfreeze = 0
-#		rwdstart = 0
-#		rwdfinish = 0
-
-#		angle = actn[1] / 180 * math.pi * 360 / nangles
+		dir = int(actn[0] * 2)
 		ms_distance = 200
-#		tx = int(math.sin(angle) * ms_distance)
-#		ty = int(math.cos(angle) * ms_distance)
 		tx = int(actn[1] * ms_distance)
 		ty = int(actn[2] * ms_distance)
-		fifowrite(self.fout, int(actn[0]), tx, ty, int(actn[3]), int(actn[4]), 0, False)
+		jump = int(actn[3] * 3)
+		hook = int(actn[4] * 3)
+
+		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
 
 		inputs = self.fin.readline().split()
 		input = inputs[0:9]
