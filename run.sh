@@ -1,7 +1,7 @@
 #!/bin/sh
 
 mapf=ddnetAI/build/AI4.txt
-n=1
+n=4
 
 for i in $(seq 1 $n)
 do
