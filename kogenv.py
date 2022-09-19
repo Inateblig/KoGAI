@@ -139,7 +139,7 @@ class KoGEnv(gym.Env):
 
 		if (int(rwds[0]) == 1):
 			self.rwdfreeze += glb.freezew
-			print("donefreeze")
+#			print("donefreeze")
 			self.isdone = True
 		if (int(rwds[1]) == 1 and self.hasstarted == False):
 			self.rwdstart += glb.startw
@@ -149,6 +149,7 @@ class KoGEnv(gym.Env):
 			self.hasfinished = True
 #			print("finish", rwdfinish, "self.i", self.i)
 			self.isdone = True
+
 		if ((abs(math.sqrt(inp.vel.x**2 + inp.vel.y**2))) >= self.spdthres):
 			self.rwdspeed += glb.speedw
 		else:
@@ -157,10 +158,11 @@ class KoGEnv(gym.Env):
 		reward = self.totalrwd - self.prevrwd
 		self.prevrwd = self.totalrwd
 
-#		print("freeze", rwdfreeze, \
-#		"start", rwdstart, \
-#		"finish", rwdfinish, \
-#		"speed", rwdspeed, \
+#		print("freeze", self.rwdfreeze, \
+#		"start", self.rwdstart, \
+#		"finish", self.rwdfinish, \
+#		"speed", self.rwdspeed, \
+#		"prev_reward", self.prevrwd, \
 #		"reward", reward, \
 #		"self.i", self.i)
 
@@ -170,6 +172,7 @@ class KoGEnv(gym.Env):
 
 	def reset(self):
 		fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
+#		print("doing reset")
 		self.isdone = False
 		self.hasstarted = False
 		self.hasfinished = False

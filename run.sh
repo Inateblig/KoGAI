@@ -1,6 +1,6 @@
 #!/bin/sh
 
-mapf=ddnetAI/build/AI4.txt
+mapf=ddnetAI/build/AI2.txt
 n=1
 
 for i in $(seq 1 $n)
