@@ -127,6 +127,9 @@ index 000000000..8ab5e53d3
 +
 +extern const char *prognm;
 +extern struct fifo fifoout, fifoin;
+diff --git a/src/game/Tick() b/src/game/Tick()
+new file mode 100644
+index 000000000..e69de29bb
 diff --git a/src/game/client/components/controls.cpp b/src/game/client/components/controls.cpp
 index 05d26098e..d1c73f4e5 100644
 --- a/src/game/client/components/controls.cpp
@@ -201,7 +204,7 @@ index d6c801442..5b616aac9 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..4faccfdad 100644
+index 54e739bdc..6b477af7c 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
 @@ -3,6 +3,14 @@
@@ -247,7 +250,7 @@ index 54e739bdc..4faccfdad 100644
  void CCharacter::SetWeapon(int W)
  {
  	if(W == m_Core.m_ActiveWeapon)
-@@ -555,11 +584,86 @@ void CCharacter::ResetInput()
+@@ -555,11 +584,87 @@ void CCharacter::ResetInput()
  
  void CCharacter::Tick()
  {
@@ -260,22 +263,22 @@ index 54e739bdc..4faccfdad 100644
 +		int sk;
 +		pfd.fd = fileno(fifoin.f);
 +		pfd.events = POLLIN;
-+		ai_selfkill = 0;
++//		ai_selfkill = 0;
 +	ckinput:
 +		switch (poll(&pfd, 1, 0)) {
 +		case 1:
 +			if (fgets(inp, sizeof inp, fifoin.f)) {
-+	//			printf("inp: %s\n", inp);
++//				printf("inp: %s\n", inp);
 +				if ((s = strchr(inp, '\n')))
 +					*s = 0;
-+				sscanf(inp, "%d %d %d %d %d %d %d",
++				sscanf(inp, "%d %d %d %d %d %d",
 +					&ai_inp.m_Direction,
 +					&ai_inp.m_TargetX,
 +					&ai_inp.m_TargetY,
 +					&ai_inp.m_Jump,
 +					&ai_inp.m_Hook,
-+					&sk,
-+					&ai_isdone);
++					&sk);
++//					&ai_isdone);
 +				ai_selfkill |= sk;
 +	//			printf("%d %d %d\n",
 +	//			ai_inp.m_Direction, ai_inp.m_TargetX, ai_inp.m_TargetY);
@@ -312,11 +315,12 @@ index 54e739bdc..4faccfdad 100644
 +			int selfkill;
 +		} rwd;
 +
-+		rwd.start = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_START)) ? 1 : 0;
-+		rwd.finish = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FINISH)) ? 1 : 0;
-+		rwd.selfkill = ai_selfkill ? 1 : 0;
-+
 +		if (haveread) {
++			rwd.freeze = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FREEZE)) ? 1 : 0;
++			rwd.start = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_START)) ? 1 : 0;
++			rwd.finish = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FINISH)) ? 1 : 0;
++			rwd.selfkill = ai_selfkill ? 1 : 0;
++
 +			fprintf(fifoout.f, V2F " " V2F " " V2F " %d %d %d" " %d %d %d\n",
 +				V2A(m_Core.m_Pos), V2A(m_Core.m_Vel), V2A(m_Core.m_HookPos),
 +				m_Core.m_HookState, m_Core.m_Direction, ai_availjumps,
