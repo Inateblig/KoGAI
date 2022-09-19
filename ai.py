@@ -67,7 +67,7 @@ if not os.path.exists(logdir):
 	os.makedirs(logdir)
 
 n_envs = len(glb.fifofs)
-iters = 100
+iters = 10
 nstp = 256
 lr = 0.0005
 bs = 256

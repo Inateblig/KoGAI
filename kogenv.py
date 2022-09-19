@@ -70,22 +70,25 @@ def fifowrite(fout, dir, tx, ty, j, h, sk, pr):
 
 maxvel = 6000
 maxhooklen = 1600
-nangles = 16
+nangles = 180
 vision = 20
 firstobs = [0] * (vision **2 + 9)
-low = np.array([1] * vision**2 + \
+
+alow = np.array([-1, -1, -1, 0, 0])
+ahigh = np.array([1, 1, 1, 2, 2])
+
+olow = np.array([1] * vision**2 + \
 	[0, 0, \
 	-maxvel, -maxvel, \
 	-maxhooklen, -maxhooklen, \
 	0, 0, 0 \
 	])
-high = np.array([256] * vision**2 + \
+ohigh = np.array([256] * vision**2 + \
 	[32, 32, \
 	maxvel, maxvel, \
 	maxhooklen, maxhooklen, \
 	7, 3, 3 \
 	])
-
 
 
 class KoGEnv(gym.Env):
@@ -104,8 +107,8 @@ class KoGEnv(gym.Env):
 	i = 0
 	def __init__(self):
 		super(KoGEnv, self).__init__()
-		self.action_space = spaces.MultiDiscrete([3,nangles,2,2])
-		self.observation_space = spaces.Box(low, high, dtype=np.float32)
+		self.action_space = spaces.Box(alow, ahigh, dtype=np.float32)
+		self.observation_space = spaces.Box(olow, ohigh, dtype=np.float32)
 
 #		print("woho")
 		glb.lock.acquire()
@@ -122,11 +125,13 @@ class KoGEnv(gym.Env):
 #		rwdstart = 0
 #		rwdfinish = 0
 
-		angle = actn[1] / 180 * math.pi * 360 / nangles
+#		angle = actn[1] / 180 * math.pi * 360 / nangles
 		ms_distance = 200
-		tx = int(math.sin(angle) * ms_distance)
-		ty = int(math.cos(angle) * ms_distance)
-		fifowrite(self.fout, actn[0] - 1, tx, ty, actn[2], actn[3], 0, False)
+#		tx = int(math.sin(angle) * ms_distance)
+#		ty = int(math.cos(angle) * ms_distance)
+		tx = int(actn[1] * ms_distance)
+		ty = int(actn[2] * ms_distance)
+		fifowrite(self.fout, int(actn[0]), tx, ty, int(actn[3]), int(actn[4]), 0, False)
 
 		inputs = self.fin.readline().split()
 		input = inputs[0:9]
