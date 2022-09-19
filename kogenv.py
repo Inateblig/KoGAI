@@ -73,6 +73,20 @@ maxhooklen = 1600
 nangles = 16
 vision = 20
 firstobs = [0] * (vision **2 + 9)
+low = np.array([1] * vision**2 + \
+	[0, 0, \
+	-maxvel, -maxvel, \
+	-maxhooklen, -maxhooklen, \
+	0, 0, 0 \
+	])
+high = np.array([256] * vision**2 + \
+	[32, 32, \
+	maxvel, maxvel, \
+	maxhooklen, maxhooklen, \
+	7, 3, 3 \
+	])
+
+
 
 class KoGEnv(gym.Env):
 	fin = 0
@@ -91,17 +105,7 @@ class KoGEnv(gym.Env):
 	def __init__(self):
 		super(KoGEnv, self).__init__()
 		self.action_space = spaces.MultiDiscrete([3,nangles,2,2])
-		self.observation_space = spaces.MultiDiscrete([256] * vision**2 +
-		[
-		# ppos
-		32, 32,
-		# pvel
-		maxvel * 2, maxvel * 2,
-		# hpos
-		maxhooklen * 2, maxhooklen * 2,
-		# hookstate, dir, njum
-		7, 3, 3
-		])
+		self.observation_space = spaces.Box(low, high, dtype=np.float32)
 
 #		print("woho")
 		glb.lock.acquire()
