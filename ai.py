@@ -79,22 +79,22 @@ model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=logdir,
 #model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=logdir,
 #	learning_rate = lr, n_steps=nstp)
 model.learn(total_timesteps=TOTALTIMESTEPS)
-model.save(f"~/Downloads/Teeworlds/ML/{models_dir}/model0")
+model.save(f"{models_dir}/model0")
 print("modeldone 0")
 
 #Train loop
 #for i in range(0,200):
-##	model = PPO.load(f"~/Downloads/Teeworlds/ML/{models_dir}/model{i}", print_system_info=True)
-#	model = A2C.load(f"~/Downloads/Teeworlds/ML/{models_dir}/model{i}", print_system_info=True)
+##	model = PPO.load(f"{models_dir}/model{i}", print_system_info=True)
+#	model = A2C.load(f"{models_dir}/model{i}", print_system_info=True)
 #	model.set_env(env)
 #
 #	model.learn(total_timesteps=TOTALTIMESTEPS, reset_num_timesteps=False)
-#	model.save(f"~/Downloads/Teeworlds/ML/{models_dir}/model{i+1}")
+#	model.save(f"{models_dir}/model{i+1}")
 #	print("modeldone", i)
 
 #Load fromm here
 #i = 25
-#model = PPO.load(f"~/Downloads/Teeworlds/ML/models/20220610_013518/model{i}", print_system_info=True)
+#model = PPO.load(f"models/20220610_013518/model{i}", print_system_info=True)
 #model.set_env(env)
 #obs = env.reset()
 #for i in range(10000):
