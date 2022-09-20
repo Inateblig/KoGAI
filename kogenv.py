@@ -3,6 +3,8 @@ import gym
 import glb
 import math
 from gym import spaces
+from time import time
+from stable_baselines3.common.callbacks import BaseCallback
 
 class vec2:
 	x: float
@@ -90,7 +92,6 @@ ohigh = np.array([256] * vision**2 + \
 	7, 3, 3 \
 	])
 
-
 class KoGEnv(gym.Env):
 	fin = 0
 	fout = 0
@@ -104,6 +105,7 @@ class KoGEnv(gym.Env):
 	rwdfinish = 0
 	rwdoldarea = 0
 	rwdnewarea = 0
+	rwdjump = 0
 	totalrwd = 0
 	prevrwd = 0
 	i = 0
@@ -166,8 +168,10 @@ class KoGEnv(gym.Env):
 			self.rwdspeed += glb.speedw
 		else:
 			self.rwdspeed += -glb.speedw * 0.5
+		if (jump > 0):
+			self.rwdjump += glb.jumpw
 		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + self.rwdspeed + \
-			self.rwdoldarea + self.rwdnewarea
+			self.rwdoldarea + self.rwdnewarea + self.rwdjump
 		reward = self.totalrwd - self.prevrwd
 		self.prevrwd = self.totalrwd
 
@@ -181,11 +185,16 @@ class KoGEnv(gym.Env):
 #		"reward", reward, \
 #		"self.i", self.i)
 
+
 		done = self.isdone
 #		print(v2tolist(inp.pp), v2tolist(inp.vel), v2tolist(inp.hp), inp.hs + 1, inp.dir + 1, inp.njum)
+		glb.totalrwd = self.totalrwd
+
 		return np.array(obs), reward, done, info
 
 	def reset(self):
+#		start_time = time()
+#		time_alive = 0
 		fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
 #		print("doing reset")
 		self.isdone = False
@@ -195,3 +204,15 @@ class KoGEnv(gym.Env):
 		return np.array(firstobs)  # reward, done, info can't be included
 
 #	def close(self):
+
+#class TensorboardCallback(BaseCallback):
+##	Custom callback for plotting additional values in tensorboard.
+#	def __init__(self, verbose=0):
+#		super(TensorboardCallback, self).__init__(verbose)
+#
+#	def _on_step(self) -> bool:
+#		# Log scalar value (here a random variable)
+##		value = np.random.random()
+#		self.logger.record('total rwd', glb.totalrwd)
+##		self.logger.record('time_alive', time() - self.start_time)
+#		return True

@@ -8,8 +8,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from datetime import datetime
 from array import array
 from stable_baselines3 import PPO
-#from stable_baselines3 import A2C
-from kogenv import KoGEnv
+import kogenv
 
 fifofnms = []
 try:
@@ -67,17 +66,17 @@ if not os.path.exists(logdir):
 	os.makedirs(logdir)
 
 n_envs = len(glb.fifofs)
-iters = 10
-nstp = 1024
+iters = 100
+nstp = 128
 lr = 0.0005
-bs = 2048
+bs = 128
 TOTALTIMESTEPS = nstp * iters * n_envs
 
-env = make_vec_env(KoGEnv, n_envs=n_envs)
-model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=logdir,
+env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)
+model = PPO('MlpPolicy', env, verbose=2, tensorboard_log=logdir,
 	learning_rate = lr, n_steps=nstp, batch_size = bs)
-#model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=logdir,
-#	learning_rate = lr, n_steps=nstp)
+
+#model.learn(total_timesteps=TOTALTIMESTEPS, callback=kogenv.TensorboardCallback())
 model.learn(total_timesteps=TOTALTIMESTEPS)
 model.save(f"{models_dir}/model0")
 print("modeldone 0")
@@ -98,9 +97,9 @@ print("modeldone 0")
 #model.set_env(env)
 #obs = env.reset()
 #for i in range(10000):
-#    action, _state = model.predict(obs)
-#    obs, reward, done, info = env.step(action)
-#    if done:
-#    	break
+#	action, _state = model.predict(obs)
+#	obs, reward, done, info = env.step(action)
+#	if done:
+#		break
 #obs = env.reset()
 #print("modeldone", i)

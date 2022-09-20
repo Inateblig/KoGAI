@@ -490,7 +490,7 @@ index d6c801442..5b616aac9 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..8faae2201 100644
+index 54e739bdc..cd15c8ada 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
 @@ -3,12 +3,52 @@
@@ -692,7 +692,7 @@ index 54e739bdc..8faae2201 100644
  	m_LatestPrevInput = m_LatestInput = m_PrevInput = m_SavedInput = m_Input;
  
 +	cbinit(&prevareas, sizeof(struct area), NELM(prevareabuf), prevareabuf);
-+	curarea.d = 1 * 32;
++	curarea.d = 5 * 32;
 +
  	ResetPrediction();
  	Read(pChar, pExtended, pExtendedDisplayInfo, false);
@@ -708,6 +708,18 @@ index 54e739bdc..8faae2201 100644
  }
  
  void CCharacter::Read(CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtended, CNetObj_DDNetCharacterDisplayInfo *pExtendedDisplayInfo, bool IsLocal)
+diff --git a/src/game/server/gamecontroller.cpp b/src/game/server/gamecontroller.cpp
+index 1f8c316ac..b01575171 100644
+--- a/src/game/server/gamecontroller.cpp
++++ b/src/game/server/gamecontroller.cpp
+@@ -97,6 +97,7 @@ void IGameController::DoActivityCheck()
+ 
+ float IGameController::EvaluateSpawnPos(CSpawnEval *pEval, vec2 Pos, int DDTeam)
+ {
++	return rand();
+ 	float Score = 0.0f;
+ 	CCharacter *pC = static_cast<CCharacter *>(GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_CHARACTER));
+ 	for(; pC; pC = (CCharacter *)pC->TypeNext())
 diff --git a/src/tools/map_diff.cpp b/src/tools/map_diff.cpp
 index 07dab55e0..da0358210 100644
 --- a/src/tools/map_diff.cpp
