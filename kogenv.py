@@ -102,6 +102,8 @@ class KoGEnv(gym.Env):
 	rwdfreeze = 0
 	rwdstart = 0
 	rwdfinish = 0
+	rwdoldarea = 0
+	rwdnewarea = 0
 	totalrwd = 0
 	prevrwd = 0
 	i = 0
@@ -132,7 +134,7 @@ class KoGEnv(gym.Env):
 
 		inputs = self.fin.readline().split()
 		input = inputs[0:9]
-		rwds = inputs[9:12]
+		rwds = inputs[9:13]
 		inp = getinput(input)
 
 		obs = []
@@ -155,18 +157,25 @@ class KoGEnv(gym.Env):
 			self.hasfinished = True
 #			print("finish", rwdfinish, "self.i", self.i)
 			self.isdone = True
+		if (int(rwds[3]) < 0):
+			self.rwdoldarea += glb.oldareaw * (int(rwds[3]) - 1)
+		elif (int(rwds[3]) > 0):
+			self.rwdnewarea += glb.newareaw
 
 		if ((abs(math.sqrt(inp.vel.x**2 + inp.vel.y**2))) >= self.spdthres):
 			self.rwdspeed += glb.speedw
 		else:
 			self.rwdspeed += -glb.speedw * 0.5
-		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + self.rwdspeed
+		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + self.rwdspeed + \
+			self.rwdoldarea + self.rwdnewarea
 		reward = self.totalrwd - self.prevrwd
 		self.prevrwd = self.totalrwd
 
 #		print("freeze", self.rwdfreeze, \
 #		"start", self.rwdstart, \
 #		"finish", self.rwdfinish, \
+#		"oldarea", self.rwdoldarea, \
+#		"newarea", self.rwdnewarea, \
 #		"speed", self.rwdspeed, \
 #		"prev_reward", self.prevrwd, \
 #		"reward", reward, \
