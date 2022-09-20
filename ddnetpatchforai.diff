@@ -386,9 +386,6 @@ index 000000000..0f77a2ce0
 +
 +extern const char *prognm;
 +extern struct fifo fifoout, fifoin;
-diff --git a/src/game/Tick() b/src/game/Tick()
-new file mode 100644
-index 000000000..e69de29bb
 diff --git a/src/game/client/area.cpp b/src/game/client/area.cpp
 new file mode 100644
 index 000000000..7dd480737
@@ -493,10 +490,10 @@ index d6c801442..5b616aac9 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..bcbda75ad 100644
+index 54e739bdc..8faae2201 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
-@@ -3,12 +3,51 @@
+@@ -3,12 +3,52 @@
  #include <engine/shared/config.h>
  #include <game/generated/client_data.h>
  #include <game/mapitems.h>
@@ -518,12 +515,13 @@ index 54e739bdc..bcbda75ad 100644
  #include "laser.h"
  #include "projectile.h"
  
++#define V2F "%d %d"
++#define V2A(V) (int)(V).x, (int)(V).y
++
  // Character, "physical" player's part
 +intern struct area prevareabuf[32];
-+intern struct area curarea = {{0.f, 0.f}, 3 * 32};
-+intern struct cycbuf prevareas = {
-+	sizeof(struct area), NELM(prevareabuf), 0, 0, prevareabuf,
-+};
++intern struct area curarea;
++intern struct cycbuf prevareas;
 +
 +bool ColSF(CCollision *pCollision, vec2 Prev, vec2 Pos, int TILE) {
 +//	CCollision *pCollision = pClient->Collision();
@@ -548,17 +546,21 @@ index 54e739bdc..bcbda75ad 100644
  
  void CCharacter::SetWeapon(int W)
  {
-@@ -553,13 +592,133 @@ void CCharacter::ResetInput()
+@@ -553,13 +593,140 @@ void CCharacter::ResetInput()
  	m_LatestPrevInput = m_LatestInput = m_Input;
  }
  
 +intern int
 +ckareas(struct area *cur, struct cycbuf *prev, vec2 p)
 +{
-+	#define new new_
++	#define new new_ /* zogtib big troll */
 +	struct area *a, new;
 +	size_t i;
 +
++	#define ARF V2F " %d"
++	#define ARA(A) V2A((A).c), (A).d
++
++//	printf("p:" V2F " -- " ARF, V2A(p), ARA(*cur));
 +	new = *cur;
 +	if (p.x < cur->c.x - cur->d)
 +		new.c.x -= 2 * cur->d;
@@ -568,18 +570,24 @@ index 54e739bdc..bcbda75ad 100644
 +		new.c.y -= 2 * cur->d;
 +	else if (p.y > cur->c.y + cur->d)
 +		new.c.y += 2 * cur->d;
-+	else
++	else {
++		printf(" in\n");
 +		return 0;
++	}
 +
++//	printf("\n");
 +	for (i = 1; i <= prev->nea; i++) {
 +		a = (struct area *)cbelmat(prev, prev->fp + prev->nea - i);
++//		printf("pa[%d]: " ARF "\n", (int)i, ARA(*a));
 +		if (areahaspos(a, p))
 +			goto cut;
 +	}
++//	printf("got to new area\n");
 +	cbadd(prev, cur);
 +	*cur = new;
 +	return 1;
 +cut:
++//	printf("move your a**\n");
 +	prev->nea -= i;
 +	*cur = *a;
 +	return -(int)i;
@@ -639,9 +647,6 @@ index 54e739bdc..bcbda75ad 100644
  	m_Core.Tick(true);
  
 +	if (m_ID == ai_CID) {
-+		#define V2F "%d %d"
-+		#define V2A(V) (int)(V).x, (int)(V).y
-+
 +		static struct {
 +			int freeze;
 +			int start;
@@ -682,6 +687,27 @@ index 54e739bdc..bcbda75ad 100644
  	// handle Weapons
  	HandleWeapons();
  
+@@ -1146,6 +1313,9 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
+ 
+ 	m_LatestPrevInput = m_LatestInput = m_PrevInput = m_SavedInput = m_Input;
+ 
++	cbinit(&prevareas, sizeof(struct area), NELM(prevareabuf), prevareabuf);
++	curarea.d = 1 * 32;
++
+ 	ResetPrediction();
+ 	Read(pChar, pExtended, pExtendedDisplayInfo, false);
+ }
+@@ -1181,6 +1351,10 @@ void CCharacter::ResetPrediction()
+ 	}
+ 	m_LastWeaponSwitchTick = 0;
+ 	m_LastTuneZoneTick = 0;
++
++	/* for ai */
++	prevareas.nea = 0;
++	curarea.c = vec2{};
+ }
+ 
+ void CCharacter::Read(CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtended, CNetObj_DDNetCharacterDisplayInfo *pExtendedDisplayInfo, bool IsLocal)
 diff --git a/src/tools/map_diff.cpp b/src/tools/map_diff.cpp
 index 07dab55e0..da0358210 100644
 --- a/src/tools/map_diff.cpp
