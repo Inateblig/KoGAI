@@ -1,7 +1,16 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 38dae4940..f23782687 100644
+index 38dae4940..788a1eb77 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
+@@ -187,7 +187,7 @@ else()
+ endif()
+ 
+ set(SERVER_EXECUTABLE DDNet-Server CACHE STRING "Name of the built server executable")
+-set(CLIENT_EXECUTABLE DDNet CACHE STRING "Name of the build client executable")
++set(CLIENT_EXECUTABLE DDNet-AI CACHE STRING "Name of the build client executable")
+ 
+ ########################################################################
+ # Compiler flags
 @@ -1674,6 +1674,12 @@ add_custom_command(OUTPUT "src/game/generated/wordlist.h"
  
  # Sources
@@ -503,10 +512,10 @@ index d6c801442..5b616aac9 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..75a19d51b 100644
+index 54e739bdc..f96d957a1 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
-@@ -3,12 +3,52 @@
+@@ -3,6 +3,20 @@
  #include <engine/shared/config.h>
  #include <game/generated/client_data.h>
  #include <game/mapitems.h>
@@ -523,18 +532,23 @@ index 54e739bdc..75a19d51b 100644
 +#include <base/util.h>
 +#include <base/cycbuf.h>
 +#include <game/client/area.h>
++#include <base/math.h>
  
  #include "character.h"
  #include "laser.h"
- #include "projectile.h"
+@@ -10,6 +24,55 @@
+ 
+ // Character, "physical" player's part
  
 +#define V2F "%d %d"
 +#define V2A(V) (int)(V).x, (int)(V).y
 +
- // Character, "physical" player's part
 +intern struct area prevareabuf[32];
 +intern struct area curarea;
 +intern struct cycbuf prevareas;
++const int HNRAYS = 8;
++const int FNRAYS = 8;
++const int RAYLEN = 32 * 16;
 +
 +bool ColSF(CCollision *pCollision, vec2 Prev, vec2 Pos, int TILE) {
 +//	CCollision *pCollision = pClient->Collision();
@@ -556,10 +570,29 @@ index 54e739bdc..75a19d51b 100644
 +	}
 +	return false;
 +}
- 
++
++intern void
++gettiledist(float ds[], size_t nd, CCollision *cln, vec2 p, int tile)
++{
++	vec2 e, cp;
++	float a;
++	size_t i;
++	int t;
++
++	for (i = 0; i < nd; i++) {
++		a = i * 2*pi / nd;
++		e = vec2(cosf(a), sinf(a)) * RAYLEN;
++		if ((t = cln->IntersectLine(p, e, &cp, 0)) && t == tile)
++			ds[i] = length(cp) / RAYLEN;
++		else
++			ds[i] = -1.f;
++	}
++}
++
  void CCharacter::SetWeapon(int W)
  {
-@@ -553,13 +593,145 @@ void CCharacter::ResetInput()
+ 	if(W == m_Core.m_ActiveWeapon)
+@@ -553,13 +616,158 @@ void CCharacter::ResetInput()
  	m_LatestPrevInput = m_LatestInput = m_Input;
  }
  
@@ -584,7 +617,7 @@ index 54e739bdc..75a19d51b 100644
 +	else if (p.y > cur->c.y + cur->d)
 +		new.c.y += 2 * cur->d;
 +	else {
-+		printf(" in\n");
++//		printf(" in\n");
 +		return 0;
 +	}
 +
@@ -678,6 +711,11 @@ index 54e739bdc..75a19d51b 100644
 +		else
 +			rwd.area = 0;
 +
++		float htds[HNRAYS];
++		float ftds[FNRAYS];
++		gettiledist(htds, NELM(htds), Collision(), m_Core.m_Pos, TILE_SOLID);
++		gettiledist(ftds, NELM(ftds), Collision(), m_Core.m_Pos, TILE_FREEZE);
++
 +		if (haveread) {
 +			rwd.freeze = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FREEZE)) ? 1 : 0;
 +			rwd.start = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_START)) ? 1 : 0;
@@ -687,11 +725,19 @@ index 54e739bdc..75a19d51b 100644
 +			for (ckpnt = TILE_CHECKPOINT_FIRST; ckpnt < TILE_CHECKPOINT_LAST; ckpnt++)
 +				rwd.ckpnt = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, ckpnt)) ? 1 : 0;
 +
-+			fprintf(fifoout.f, V2F " " V2F " " V2F " %d %d %d" " %d %d %d %d" " %d\n",
++			fprintf(fifoout.f, V2F " " V2F " " V2F " %d %d %d" " %d %d %d %d" " %d",
 +				V2A(m_Core.m_Pos), V2A(m_Core.m_Vel), V2A(m_Core.m_HookPos),
 +				m_Core.m_HookState, m_Core.m_Direction, ai_availjumps,
 +				rwd.freeze, rwd.start, rwd.finish, rwd.area,
 +				rwd.ckpnt);
++			size_t idx;
++			for (idx = 0; idx < NELM(htds); idx++) {
++				fprintf(fifoout.f, " %f", htds[idx]);
++			}
++			for (idx = 0; idx < NELM(ftds); idx++) {
++				fprintf(fifoout.f, " %f", ftds[idx]);
++			}
++			fprintf(fifoout.f, "\n");
 +//			printf("cid: %d " V2F " " V2F " " V2F " %d %d %d" " %d %d %d\n",
 +//				ai_CID,
 +//				V2A(m_Core.m_Pos), V2A(m_Core.m_Vel), V2A(m_Core.m_HookPos),
@@ -705,7 +751,7 @@ index 54e739bdc..75a19d51b 100644
  	// handle Weapons
  	HandleWeapons();
  
-@@ -1146,6 +1318,9 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
+@@ -1146,6 +1354,9 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
  
  	m_LatestPrevInput = m_LatestInput = m_PrevInput = m_SavedInput = m_Input;
  
@@ -715,7 +761,7 @@ index 54e739bdc..75a19d51b 100644
  	ResetPrediction();
  	Read(pChar, pExtended, pExtendedDisplayInfo, false);
  }
-@@ -1181,6 +1356,10 @@ void CCharacter::ResetPrediction()
+@@ -1181,6 +1392,10 @@ void CCharacter::ResetPrediction()
  	}
  	m_LastWeaponSwitchTick = 0;
  	m_LastTuneZoneTick = 0;
@@ -738,6 +784,18 @@ index 1f8c316ac..b01575171 100644
  	float Score = 0.0f;
  	CCharacter *pC = static_cast<CCharacter *>(GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_CHARACTER));
  	for(; pC; pC = (CCharacter *)pC->TypeNext())
+diff --git a/src/game/server/teams.cpp b/src/game/server/teams.cpp
+index 96b2c352b..cab506b35 100644
+--- a/src/game/server/teams.cpp
++++ b/src/game/server/teams.cpp
+@@ -657,6 +657,7 @@ void CGameTeams::OnTeamFinish(CPlayer **Players, unsigned int Size, float Time,
+ 
+ void CGameTeams::OnFinish(CPlayer *Player, float Time, const char *pTimestamp)
+ {
++	return;
+ 	if(!Player || !Player->IsPlaying())
+ 		return;
+ 	// TODO:DDRace:btd: this ugly
 diff --git a/src/tools/map_diff.cpp b/src/tools/map_diff.cpp
 index 07dab55e0..da0358210 100644
 --- a/src/tools/map_diff.cpp

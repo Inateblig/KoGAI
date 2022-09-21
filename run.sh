@@ -1,13 +1,13 @@
 #!/bin/sh
 
 mapf=ddnetAI/build/AipGoresAI2checkpoints.txt
-n=5
+n=20
 
 for i in $(seq 1 $n)
 do
 	(
 		cd ddnetAI/build
-		FIFOOUT=fout$i FIFOIN=fin$i ./DDNet -f settings_ddnet.cfg > hiha$i
+		FIFOOUT=fout$i FIFOIN=fin$i ./DDNet-AI -f settings_ddnet.cfg > hiha$i
 	) &
 
 	#./ai.py
@@ -18,7 +18,7 @@ do
 	#python3 train.py
 done
 
-python3 ai.py $mapf $(
+python3 ai.py $(
 	for i in $(seq 1 $n)
 	do
 		echo "ddnetAI/build/fout$i ddnetAI/build/fin$i"

@@ -74,18 +74,21 @@ maxvel = 6000
 maxhooklen = 1600
 nangles = 180
 vision = 20
-firstobs = [0] * (vision **2 + 9)
+#firstobs = [0] * (vision **2 + 9)
+firstobs = [0] * (glb.totalrays + 9)
 
 alow = np.array([-1, -1, -1, 0, 0])
 ahigh = np.array([1, 1, 1, 1, 1])
 
-olow = np.array([1] * vision**2 + \
+#olow = np.array([1] * vision**2 +
+olow = np.array([-1] * glb.totalrays + \
 	[0, 0, \
 	-maxvel, -maxvel, \
 	-maxhooklen, -maxhooklen, \
 	0, 0, 0 \
 	])
-ohigh = np.array([256] * vision**2 + \
+#ohigh = np.array([256] * vision**2 +
+ohigh = np.array([1] * glb.totalrays + \
 	[32, 32, \
 	maxvel, maxvel, \
 	maxhooklen, maxhooklen, \
@@ -139,9 +142,13 @@ class KoGEnv(gym.Env):
 		input = inputs[0:9]
 		rwds = inputs[9:14]
 		inp = getinput(input)
+		hray = inputs[14:14+glb.hrays]
+		fray = inputs[14+glb.hrays:14+glb.hrays+glb.frays]
+		allrays = inputs[14:14+glb.hrays+glb.frays]
 
 		obs = []
-		getmaptiles(obs, glb.map, inp.pp.x // 32, inp.pp.y // 32, vision)
+#		getmaptiles(obs, glb.map, inp.pp.x // 32, inp.pp.y // 32, vision)
+		obs.extend(allrays)
 		obs.extend([c % 32 for c in v2tolist(inp.pp)])
 		obs.extend([c + maxvel for c in v2tolist(inp.vel)])
 		obs.extend([inp.hp.x - inp.pp.x + maxhooklen, inp.hp.y - inp.pp.x + maxhooklen])

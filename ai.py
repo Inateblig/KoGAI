@@ -12,39 +12,40 @@ import kogenv
 
 fifofnms = []
 try:
-	mapfnm = argv[1]
-	for i in range(2, len(argv), 2):
+#	mapfnm = argv[1]
+#	for i in range(2, len(argv), 2):
+	for i in range(1, len(argv), 2):
 		fifofnms.append([argv[i], argv[i+1]])
 except IndexError:
 	print("Not enough arguments given")
 	print(f"usage: {argv[0]} <mapfile> (<fifoin> <fifoout>)...")
 
-map = []
-with open(mapfnm, 'r') as mapf:
-	def maperror(em):
-		print(em)
-		raise KeyboardInterrupt
-
-	line = mapf.readline()
-	sp = line.split()
-
-	w = int(sp[0])
-	h = int(sp[1])
-
-	map = [None] * h
-
-	for y in range(h):
-		line = mapf.readline()
-
-		sp = line.split()
-		if len(sp) != w:
-			maperror("line no. {} has not exactly {} nums".format(y+1, w))
-
-		map[y] = array('I', [0] * w)
-
-		for x in range(w):
-			map[y][x] = int(sp[x])
-glb.map = map
+#map = []
+#with open(mapfnm, 'r') as mapf:
+#	def maperror(em):
+#		print(em)
+#		raise KeyboardInterrupt
+#
+#	line = mapf.readline()
+#	sp = line.split()
+#
+#	w = int(sp[0])
+#	h = int(sp[1])
+#
+#	map = [None] * h
+#
+#	for y in range(h):
+#		line = mapf.readline()
+#
+#		sp = line.split()
+#		if len(sp) != w:
+#			maperror("line no. {} has not exactly {} nums".format(y+1, w))
+#
+#		map[y] = array('I', [0] * w)
+#
+#		for x in range(w):
+#			map[y][x] = int(sp[x])
+#glb.map = map
 
 print(fifofnms)
 glb.fifofs = []
@@ -70,7 +71,7 @@ iters = 10
 nstp = 16384
 lr = 0.0005
 bs = 16384
-TOTALTIMESTEPS = nstp * iters * n_envs
+TOTALTIMESTEPS = nstp * iters #* n_envs
 
 env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)
 model = PPO('MlpPolicy', env, verbose=2, tensorboard_log=logdir,
