@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import gym
 import glb
@@ -131,7 +132,7 @@ class KoGEnv(gym.Env):
 		glb.lock.release()
 		if not os.path.exists(glb.logdir):
 			os.makedirs(glb.logdir)
-		self.logfile = open(f"(glb.logdir)/Logs_{self.i + 1:02}", "w")
+		self.logfile = open(f"{glb.logdir}/Logs_{self.i + 1:02}", "w")
 
 	def step(self, actn):
 		info = {}
@@ -219,7 +220,7 @@ class KoGEnv(gym.Env):
 #		f"reward {reward:.3f}", \
 #		f"self.i {self.i:.3f}")
 
-		if self.n % 1000:
+		if self.n % 250 == 0:
 			self.logfile.write( \
 			f"freeze {self.rwdfreeze:.3f} " + \
 			f"start {self.rwdstart:.3f} " + \
@@ -231,8 +232,8 @@ class KoGEnv(gym.Env):
 			f"ckpnt {self.rwdckpnt:.3f} " + \
 			f"hook {self.rwdhook:.3f} " + \
 			f"prev_reward {self.prevrwd:.3f} " + \
-			f"reward {reward:.3f} " + \
-			f"self.i {self.i:.0f}\n")
+			f"reward {reward:.3f}\n")
+			self.logfile.flush()
 		self.n += 1
 
 
