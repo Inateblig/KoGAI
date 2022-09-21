@@ -197,6 +197,19 @@ index 000000000..0e81b05d4
 +		(E(2, z, __VA_ARGS__)) J\
 +		(E(3, w, __VA_ARGS__))\
 +	)
+diff --git a/src/base/system.cpp b/src/base/system.cpp
+index ae12c834b..879a26924 100644
+--- a/src/base/system.cpp
++++ b/src/base/system.cpp
+@@ -936,7 +936,7 @@ int64_t time_get()
+ int64_t time_freq()
+ {
+ 	using namespace std::chrono_literals;
+-	return std::chrono::nanoseconds(1s).count();
++	return std::chrono::nanoseconds(1s).count()/10;
+ }
+ 
+ int64_t time_get_nanoseconds()
 diff --git a/src/base/util.h b/src/base/util.h
 new file mode 100644
 index 000000000..f5eec5381
@@ -490,7 +503,7 @@ index d6c801442..5b616aac9 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..cd15c8ada 100644
+index 54e739bdc..75a19d51b 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
 @@ -3,12 +3,52 @@
@@ -546,7 +559,7 @@ index 54e739bdc..cd15c8ada 100644
  
  void CCharacter::SetWeapon(int W)
  {
-@@ -553,13 +593,140 @@ void CCharacter::ResetInput()
+@@ -553,13 +593,145 @@ void CCharacter::ResetInput()
  	m_LatestPrevInput = m_LatestInput = m_Input;
  }
  
@@ -653,6 +666,7 @@ index 54e739bdc..cd15c8ada 100644
 +			int finish;
 +			int selfkill;
 +			int area;
++			int ckpnt;
 +		} rwd;
 +
 +//		if (!areahaspos(&curarea, m_Core.m_Pos) && !curarea.c.x && !curarea.c.y)
@@ -669,11 +683,15 @@ index 54e739bdc..cd15c8ada 100644
 +			rwd.start = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_START)) ? 1 : 0;
 +			rwd.finish = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FINISH)) ? 1 : 0;
 +			rwd.selfkill = ai_selfkill ? 1 : 0;
++			int ckpnt;
++			for (ckpnt = TILE_CHECKPOINT_FIRST; ckpnt < TILE_CHECKPOINT_LAST; ckpnt++)
++				rwd.ckpnt = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, ckpnt)) ? 1 : 0;
 +
-+			fprintf(fifoout.f, V2F " " V2F " " V2F " %d %d %d" " %d %d %d %d\n",
++			fprintf(fifoout.f, V2F " " V2F " " V2F " %d %d %d" " %d %d %d %d" " %d\n",
 +				V2A(m_Core.m_Pos), V2A(m_Core.m_Vel), V2A(m_Core.m_HookPos),
 +				m_Core.m_HookState, m_Core.m_Direction, ai_availjumps,
-+				rwd.freeze, rwd.start, rwd.finish, rwd.area);
++				rwd.freeze, rwd.start, rwd.finish, rwd.area,
++				rwd.ckpnt);
 +//			printf("cid: %d " V2F " " V2F " " V2F " %d %d %d" " %d %d %d\n",
 +//				ai_CID,
 +//				V2A(m_Core.m_Pos), V2A(m_Core.m_Vel), V2A(m_Core.m_HookPos),
@@ -687,7 +705,7 @@ index 54e739bdc..cd15c8ada 100644
  	// handle Weapons
  	HandleWeapons();
  
-@@ -1146,6 +1313,9 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
+@@ -1146,6 +1318,9 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
  
  	m_LatestPrevInput = m_LatestInput = m_PrevInput = m_SavedInput = m_Input;
  
@@ -697,7 +715,7 @@ index 54e739bdc..cd15c8ada 100644
  	ResetPrediction();
  	Read(pChar, pExtended, pExtendedDisplayInfo, false);
  }
-@@ -1181,6 +1351,10 @@ void CCharacter::ResetPrediction()
+@@ -1181,6 +1356,10 @@ void CCharacter::ResetPrediction()
  	}
  	m_LastWeaponSwitchTick = 0;
  	m_LastTuneZoneTick = 0;

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-mapf=ddnetAI/build/AI4.txt
-n=1
+mapf=ddnetAI/build/AipGoresAI2checkpoints.txt
+n=5
 
 for i in $(seq 1 $n)
 do

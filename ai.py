@@ -66,10 +66,10 @@ if not os.path.exists(logdir):
 	os.makedirs(logdir)
 
 n_envs = len(glb.fifofs)
-iters = 100
-nstp = 128
+iters = 10
+nstp = 16384
 lr = 0.0005
-bs = 128
+bs = 16384
 TOTALTIMESTEPS = nstp * iters * n_envs
 
 env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)
@@ -81,15 +81,17 @@ model.learn(total_timesteps=TOTALTIMESTEPS)
 model.save(f"{models_dir}/model0")
 print("modeldone 0")
 
+
+#models_dir = "models/20220921_003524"
+startfrom = 0
 #Train loop
-#for i in range(0,200):
-##	model = PPO.load(f"{models_dir}/model{i}", print_system_info=True)
-#	model = A2C.load(f"{models_dir}/model{i}", print_system_info=True)
-#	model.set_env(env)
-#
-#	model.learn(total_timesteps=TOTALTIMESTEPS, reset_num_timesteps=False)
-#	model.save(f"{models_dir}/model{i+1}")
-#	print("modeldone", i)
+for i in range(startfrom,200):
+	model = PPO.load(f"{models_dir}/model{i}", print_system_info=True)
+	model.set_env(env)
+
+	model.learn(total_timesteps=TOTALTIMESTEPS, reset_num_timesteps=False)
+	model.save(f"{models_dir}/model{i+1}")
+	print("modeldone", i)
 
 #Load fromm here
 #i = 25

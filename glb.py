@@ -13,9 +13,10 @@ freezew = -10
 startw = 0.5
 finishw = 9.0
 speedw = 0.005
-oldareaw = 0.0
+oldareaw = 0.001
 newareaw = 0.01
-jumpw = -0.1
+jumpw = -0.01
+ckpnt = 0.1
 
 totalrwd = 0
 
