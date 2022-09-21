@@ -2,6 +2,7 @@ import threading
 
 map = []
 
+nenvs = 25
 #freezew = -10
 #startw = 0.5
 #finishw = 9.0
@@ -13,8 +14,8 @@ freezew = -10 / 10
 startw = 0.5
 finishw = 9.0
 speedw = -0.0001
-oldareaw = 0.01
-newareaw = 0.01
+oldareaw = 0.0
+newareaw = 0.0
 jumpw = -0.01
 ckpnt = 0.1
 hookw = -0.01
