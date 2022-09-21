@@ -207,7 +207,7 @@ index 000000000..0e81b05d4
 +		(E(3, w, __VA_ARGS__))\
 +	)
 diff --git a/src/base/system.cpp b/src/base/system.cpp
-index ae12c834b..879a26924 100644
+index ae12c834b..df41d9128 100644
 --- a/src/base/system.cpp
 +++ b/src/base/system.cpp
 @@ -936,7 +936,7 @@ int64_t time_get()
@@ -215,7 +215,7 @@ index ae12c834b..879a26924 100644
  {
  	using namespace std::chrono_literals;
 -	return std::chrono::nanoseconds(1s).count();
-+	return std::chrono::nanoseconds(1s).count()/10;
++	return std::chrono::nanoseconds(1s).count()/1.5;
  }
  
  int64_t time_get_nanoseconds()
@@ -512,7 +512,7 @@ index d6c801442..5b616aac9 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..f96d957a1 100644
+index 54e739bdc..aa9729ed9 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
 @@ -3,6 +3,20 @@
@@ -582,8 +582,8 @@ index 54e739bdc..f96d957a1 100644
 +	for (i = 0; i < nd; i++) {
 +		a = i * 2*pi / nd;
 +		e = vec2(cosf(a), sinf(a)) * RAYLEN;
-+		if ((t = cln->IntersectLine(p, e, &cp, 0)) && t == tile)
-+			ds[i] = length(cp) / RAYLEN;
++		if ((t = cln->IntersectLine(p, p + e, &cp, 0)) && t == tile)
++			ds[i] = length(cp - p) / RAYLEN;
 +		else
 +			ds[i] = -1.f;
 +	}

@@ -110,8 +110,12 @@ class KoGEnv(gym.Env):
 	rwdnewarea = 0
 	rwdjump = 0
 	rwdckpnt = 0
+	rwdhook = 0
 	totalrwd = 0
 	prevrwd = 0
+	hook_time = 0
+	hookstarted = False
+	n = 0
 	i = 0
 	def __init__(self):
 		super(KoGEnv, self).__init__()
@@ -125,6 +129,9 @@ class KoGEnv(gym.Env):
 		self.fin, self.fout = glb.fifofs[glb.fifoi]
 		glb.fifoi += 1
 		glb.lock.release()
+		if not os.path.exists(glb.logdir):
+			os.makedirs(glb.logdir)
+		self.logfile = open(f"(glb.logdir)/Logs_{self.i + 1:02}", "w")
 
 	def step(self, actn):
 		info = {}
@@ -133,8 +140,18 @@ class KoGEnv(gym.Env):
 		ms_distance = 200
 		tx = int(actn[1] * ms_distance)
 		ty = int(actn[2] * ms_distance)
-		jump = int(actn[3] * 3)
-		hook = int(actn[4] * 3)
+		jump = int(actn[3] * 2)
+		hook = int(actn[4] * 2)
+
+		if hook == 1:
+			self.hookstarted = True
+			self.hook_time = time()
+		elif self.hookstarted:
+			self.hookstarted = False
+			newhook_time = time()
+			hook_dt = newhook_time - self.hook_time
+			if hook_dt < glb.minhooktime:
+				self.rwdhook += glb.hookw
 
 		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
 
@@ -155,47 +172,68 @@ class KoGEnv(gym.Env):
 		obs.extend([inp.hs + 1, inp.dir + 1, inp.njum])
 #		print(obs[vision**2:])
 
-		if (int(rwds[0]) == 1):
+		if int(rwds[0]) == 1:
 			self.rwdfreeze += glb.freezew
 #			print("donefreeze")
 			self.isdone = True
-		if (int(rwds[1]) == 1 and self.hasstarted == False):
+		if int(rwds[1]) == 1 and self.hasstarted == False:
 			self.rwdstart += glb.startw
 			self.hasstarted = True
-		if (int(rwds[2]) == 1 and self.hasfinished == False):
+		if int(rwds[2]) == 1 and self.hasfinished == False:
 			self.rwdfinish += glb.finishw
 			self.hasfinished = True
 #			print("finish", rwdfinish, "self.i", self.i)
 			self.isdone = True
-		if (int(rwds[3]) < 0):
+		if int(rwds[3]) < 0:
 			self.rwdoldarea += glb.oldareaw * (int(rwds[3]) - 1)
-		elif (int(rwds[3]) > 0):
+		elif int(rwds[3]) > 0:
 			self.rwdnewarea += glb.newareaw
 
-		if ((abs(math.sqrt(inp.vel.x**2 + inp.vel.y**2))) >= self.spdthres):
+		if (abs(math.sqrt(inp.vel.x**2 + inp.vel.y**2))) >= self.spdthres:
 			self.rwdspeed += glb.speedw
 		else:
 			self.rwdspeed += -glb.speedw * 0.5
-		if (jump > 0):
+		if jump > 0:
 			self.rwdjump += glb.jumpw
 
-		if (int(rwds[4] == 1)):
+		if int(rwds[4] == 1):
 			self.rwdckpnt += glb.ckpntw
 
 		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + self.rwdspeed + \
-			self.rwdoldarea + self.rwdnewarea + self.rwdjump + self.rwdckpnt
+			self.rwdoldarea + self.rwdnewarea + self.rwdjump + self.rwdckpnt + \
+			self.rwdhook
 		reward = self.totalrwd - self.prevrwd
 		self.prevrwd = self.totalrwd
 
-#		print("freeze", self.rwdfreeze, \
-#		"start", self.rwdstart, \
-#		"finish", self.rwdfinish, \
-#		"oldarea", self.rwdoldarea, \
-#		"newarea", self.rwdnewarea, \
-#		"speed", self.rwdspeed, \
-#		"prev_reward", self.prevrwd, \
-#		"reward", reward, \
-#		"self.i", self.i)
+#		print( \
+#		f"freeze {self.rwdfreeze:.3f}", \
+#		f"start {self.rwdstart:.3f}", \
+#		f"finish {self.rwdfinish:.3f}", \
+#		f"oldarea {self.rwdoldarea:.3f}", \
+#		f"newarea {self.rwdnewarea:.3f}", \
+#		f"speed {self.rwdspeed:.3f}", \
+#		f"jump {self.rwdjump:.3f}", \
+#		f"ckpnt {self.rwdckpnt:.3f}", \
+#		f"hook {self.rwdhook:.3f}", \
+#		f"prev_reward {self.prevrwd:.3f}", \
+#		f"reward {reward:.3f}", \
+#		f"self.i {self.i:.3f}")
+
+		if self.n % 1000:
+			self.logfile.write( \
+			f"freeze {self.rwdfreeze:.3f} " + \
+			f"start {self.rwdstart:.3f} " + \
+			f"finish {self.rwdfinish:.3f} " + \
+			f"oldarea {self.rwdoldarea:.3f} " + \
+			f"newarea {self.rwdnewarea:.3f} " + \
+			f"speed {self.rwdspeed:.3f} " + \
+			f"jump {self.rwdjump:.3f} " + \
+			f"ckpnt {self.rwdckpnt:.3f} " + \
+			f"hook {self.rwdhook:.3f} " + \
+			f"prev_reward {self.prevrwd:.3f} " + \
+			f"reward {reward:.3f} " + \
+			f"self.i {self.i:.0f}\n")
+		self.n += 1
 
 
 		done = self.isdone
