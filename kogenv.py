@@ -6,6 +6,7 @@ import math
 from gym import spaces
 from time import time
 from stable_baselines3.common.callbacks import BaseCallback
+import tensorflow as tf
 
 class vec2:
 	x: float
@@ -116,6 +117,8 @@ class KoGEnv(gym.Env):
 	prevrwd = 0
 	hook_time = 0
 	hookstarted = False
+	time_alive = 0
+	start_time = 0
 	n = 0
 	i = 0
 	def __init__(self):
@@ -132,7 +135,7 @@ class KoGEnv(gym.Env):
 		glb.lock.release()
 		if not os.path.exists(glb.logdir):
 			os.makedirs(glb.logdir)
-		self.logfile = open(f"{glb.logdir}/Logs_{self.i + 1:02}", "w")
+		self.file_writer = tf.summary.create_file_writer(glb.logdir + f"/Env{self.i + 1:02}")
 
 	def step(self, actn):
 		info = {}
@@ -206,46 +209,29 @@ class KoGEnv(gym.Env):
 		reward = self.totalrwd - self.prevrwd
 		self.prevrwd = self.totalrwd
 
-#		print( \
-#		f"freeze {self.rwdfreeze:.3f}", \
-#		f"start {self.rwdstart:.3f}", \
-#		f"finish {self.rwdfinish:.3f}", \
-#		f"oldarea {self.rwdoldarea:.3f}", \
-#		f"newarea {self.rwdnewarea:.3f}", \
-#		f"speed {self.rwdspeed:.3f}", \
-#		f"jump {self.rwdjump:.3f}", \
-#		f"ckpnt {self.rwdckpnt:.3f}", \
-#		f"hook {self.rwdhook:.3f}", \
-#		f"prev_reward {self.prevrwd:.3f}", \
-#		f"reward {reward:.3f}", \
-#		f"self.i {self.i:.3f}")
-
-		if self.n % 250 == 0:
-			self.logfile.write( \
-			f"freeze {self.rwdfreeze:.3f} " + \
-			f"start {self.rwdstart:.3f} " + \
-			f"finish {self.rwdfinish:.3f} " + \
-			f"oldarea {self.rwdoldarea:.3f} " + \
-			f"newarea {self.rwdnewarea:.3f} " + \
-			f"speed {self.rwdspeed:.3f} " + \
-			f"jump {self.rwdjump:.3f} " + \
-			f"ckpnt {self.rwdckpnt:.3f} " + \
-			f"hook {self.rwdhook:.3f} " + \
-			f"prev_reward {self.prevrwd:.3f} " + \
-			f"reward {reward:.3f}\n")
-			self.logfile.flush()
+		if self.n % 100 == 0:
+			with self.file_writer.as_default():
+					tf.summary.scalar("individual_rewards/freeze", data=self.rwdfreeze, step=self.n)
+					tf.summary.scalar("individual_rewards/start", data=self.rwdstart, step=self.n)
+					tf.summary.scalar("individual_rewards/finish", data=self.rwdfinish, step=self.n)
+					tf.summary.scalar("individual_rewards/oldarea", data=self.rwdoldarea, step=self.n)
+					tf.summary.scalar("individual_rewards/newarea", data=self.rwdnewarea, step=self.n)
+					tf.summary.scalar("individual_rewards/speed", data=self.rwdspeed, step=self.n)
+					tf.summary.scalar("individual_rewards/jump", data=self.rwdjump, step=self.n)
+					tf.summary.scalar("individual_rewards/ckpnt", data=self.rwdckpnt, step=self.n)
+					tf.summary.scalar("individual_rewards/hook", data=self.rwdhook, step=self.n)
+					tf.summary.scalar("total_rewards/reward_sum", data=self.prevrwd, step=self.n)
+					tf.summary.scalar("total_rewards/reward", data=reward, step=self.n)
 		self.n += 1
 
-
 		done = self.isdone
-#		print(v2tolist(inp.pp), v2tolist(inp.vel), v2tolist(inp.hp), inp.hs + 1, inp.dir + 1, inp.njum)
 		glb.totalrwd = self.totalrwd
-
+		
 		return np.array(obs), reward, done, info
 
 	def reset(self):
-#		start_time = time()
-#		time_alive = 0
+		self.start_time = time()
+		self.time_alive = 0
 		fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
 #		print("doing reset")
 		self.isdone = False

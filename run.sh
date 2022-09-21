@@ -1,7 +1,7 @@
 #!/bin/sh
 
 mapf=ddnetAI/build/AipGoresAI2checkpoints.txt
-n=25
+n=2
 
 for i in $(seq 1 $n)
 do

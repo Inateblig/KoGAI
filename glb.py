@@ -1,14 +1,9 @@
 import threading
+from datetime import datetime
 
-map = []
+stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-nenvs = 25
-#freezew = -10
-#startw = 0.5
-#finishw = 9.0
-#speedw = 0.005
-#oldareaw = 0.01
-#newareaw = 0.01
+nenvs = 2
 
 freezew = -10 / 10
 startw = 0.5
@@ -29,7 +24,7 @@ hrays = 8
 frays = 8
 totalrays = 16
 raylen = 32 * 16
-logdir = "log_ai_rewards"
+logdir = f"log_ai_rewards/{stamp}"
 
 fifoi = 0 # fifo index available for use
 lock = threading.Lock()

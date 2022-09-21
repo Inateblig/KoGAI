@@ -5,7 +5,7 @@ import numpy as np
 import glb
 import time
 from stable_baselines3.common.env_util import make_vec_env
-from datetime import datetime
+#from datetime import datetime
 from array import array
 from stable_baselines3 import PPO
 import kogenv
@@ -55,8 +55,7 @@ for fnms in fifofnms:
 	time.sleep(2)
 	print(fnms)
 
-datetime.now()
-stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+stamp = glb.stamp
 models_dir = f"models/{stamp}/"
 logdir = f"logs/{stamp}/"
 
@@ -68,9 +67,10 @@ if not os.path.exists(logdir):
 
 n_envs = len(glb.fifofs)
 iters = 10
-nstp = 16384
+#nstp = 16384
+nstp = 1028
 lr = 0.0005
-bs = 16384
+bs = 1028
 TOTALTIMESTEPS = nstp * iters #* n_envs
 
 env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)
