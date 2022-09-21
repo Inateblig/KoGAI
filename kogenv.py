@@ -113,12 +113,13 @@ class KoGEnv(gym.Env):
 	rwdjump = 0
 	rwdckpnt = 0
 	rwdhook = 0
+	rwdtimealive = 0
 	totalrwd = 0
 	prevrwd = 0
 	hook_time = 0
 	hookstarted = False
 	time_alive = 0
-	start_time = 0
+	reset_time = 0
 	n = 0
 	i = 0
 	def __init__(self):
@@ -203,14 +204,20 @@ class KoGEnv(gym.Env):
 		if int(rwds[4] == 1):
 			self.rwdckpnt += glb.ckpntw
 
+		if self.time_alive > glb.mintimealive:
+			self.rwdtimealive += glb.timealivew
+
 		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + self.rwdspeed + \
 			self.rwdoldarea + self.rwdnewarea + self.rwdjump + self.rwdckpnt + \
-			self.rwdhook
+			self.rwdhook + self.rwdtimealive
 		reward = self.totalrwd - self.prevrwd
 		self.prevrwd = self.totalrwd
 
+		self.time_alive = time() - self.reset_time
 		if self.n % 100 == 0:
 			with self.file_writer.as_default():
+					tf.summary.scalar("info/time_alive", data=self.time_alive, step=self.n)
+					tf.summary.scalar("individual_rewards/time_alive", data=self.rwdtimealive, step=self.n)
 					tf.summary.scalar("individual_rewards/freeze", data=self.rwdfreeze, step=self.n)
 					tf.summary.scalar("individual_rewards/start", data=self.rwdstart, step=self.n)
 					tf.summary.scalar("individual_rewards/finish", data=self.rwdfinish, step=self.n)
@@ -230,7 +237,7 @@ class KoGEnv(gym.Env):
 		return np.array(obs), reward, done, info
 
 	def reset(self):
-		self.start_time = time()
+		self.reset_time = time()
 		self.time_alive = 0
 		fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
 #		print("doing reset")
@@ -241,15 +248,3 @@ class KoGEnv(gym.Env):
 		return np.array(firstobs)  # reward, done, info can't be included
 
 #	def close(self):
-
-#class TensorboardCallback(BaseCallback):
-##	Custom callback for plotting additional values in tensorboard.
-#	def __init__(self, verbose=0):
-#		super(TensorboardCallback, self).__init__(verbose)
-#
-#	def _on_step(self) -> bool:
-#		# Log scalar value (here a random variable)
-##		value = np.random.random()
-#		self.logger.record('total rwd', glb.totalrwd)
-##		self.logger.record('time_alive', time() - self.start_time)
-#		return True

@@ -14,9 +14,11 @@ newareaw = 0.0
 jumpw = -0.01
 ckpnt = 0.1
 hookw = -0.01
+timealivew = 0.01
 
 env_speed = 1.5
 minhooktime = 0.1 / env_speed
+mintimealive = 1 / env_speed
 
 totalrwd = 0
 
@@ -24,7 +26,7 @@ hrays = 8
 frays = 8
 totalrays = 16
 raylen = 32 * 16
-logdir = f"log_ai_rewards/{stamp}"
+logdir = f"logs/{stamp}/log_ai_rewards"
 
 fifoi = 0 # fifo index available for use
 lock = threading.Lock()

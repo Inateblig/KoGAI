@@ -71,7 +71,7 @@ iters = 10
 nstp = 1028
 lr = 0.0005
 bs = 1028
-TOTALTIMESTEPS = nstp * iters #* n_envs
+TOTALTIMESTEPS = nstp * iters * n_envs
 
 env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)
 model = PPO('MlpPolicy', env, verbose=2, tensorboard_log=logdir,
