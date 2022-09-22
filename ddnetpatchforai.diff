@@ -431,7 +431,7 @@ index 000000000..0f77a2ce0
 +extern const char *prognm;
 +extern struct fifo fifoout, fifoin;
 diff --git a/src/engine/shared/config_variables.h b/src/engine/shared/config_variables.h
-index d8fd9eee4..27e6a22d0 100644
+index d8fd9eee4..58500ce35 100644
 --- a/src/engine/shared/config_variables.h
 +++ b/src/engine/shared/config_variables.h
 @@ -386,6 +386,15 @@ MACRO_CONFIG_COL(ClHookCollColorNoColl, cl_hook_coll_color_no_coll, 65407, CFGFL
@@ -442,7 +442,7 @@ index d8fd9eee4..27e6a22d0 100644
 +MACRO_CONFIG_COL(ClFreezeCollColor, cl_freeze_coll_hkln_color, 9306015, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the freeze collision line.")
 +MACRO_CONFIG_COL(ClHookableCollColor, cl_hookable_coll_hkln_color, 1179449, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the hookable collision line.")
 +MACRO_CONFIG_INT(ClFreezeLnCollSize, cl_freezeln_coll_size, 5, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Size of hook collision line")
-+MACRO_CONFIG_INT(ClHookableLnCollSize, cl_hookableln_coll_size, 5, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Size of hook collision line")
++MACRO_CONFIG_INT(ClHookableLnCollSize, cl_hookableln_coll_size, 10, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Size of hook collision line")
 +MACRO_CONFIG_INT(ClFreezeLnCollAlpha, cl_freezeln_coll_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of hook collision line (0 invisible, 100 fully visible)")
 +MACRO_CONFIG_INT(ClHookableLnCollAlpha, cl_hookableln_coll_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of hook collision line (0 invisible, 100 fully visible)")
 +
@@ -593,7 +593,7 @@ index 87f30d452..54f6437a2 100644
  	else if(s_CurTab == 1)
  	{ // ***** CHAT TAB ***** //
 diff --git a/src/game/client/components/players.cpp b/src/game/client/components/players.cpp
-index 99963d439..8a40ffc33 100644
+index 99963d439..4481524c7 100644
 --- a/src/game/client/components/players.cpp
 +++ b/src/game/client/components/players.cpp
 @@ -21,6 +21,12 @@
@@ -642,15 +642,20 @@ index 99963d439..8a40ffc33 100644
  void CPlayers::RenderHookCollLine(
  	const CNetObj_Character *pPrevChar,
  	const CNetObj_Character *pPlayerChar,
-@@ -178,12 +210,15 @@ void CPlayers::RenderHookCollLine(
+@@ -178,12 +210,17 @@ void CPlayers::RenderHookCollLine(
  			vec2 InitPos = Position;
  			vec2 FinishPos = InitPos + ExDirection * (m_pClient->m_Tuning[g_Config.m_ClDummy].m_HookLength - 42.0f);
  
 -			if(g_Config.m_ClHookCollSize > 0)
-+			if(g_Config.m_ClHookCollSize > 0 || g_Config.m_ClHookableLnCollSize > 0 || g_Config.m_ClHookableLnCollSize > 0)
- 				Graphics()->QuadsBegin();
- 			else
- 				Graphics()->LinesBegin();
+-				Graphics()->QuadsBegin();
+-			else
+-				Graphics()->LinesBegin();
++			/* for ai */
++			Graphics()->QuadsBegin();
++//			if(g_Config.m_ClHookCollSize > 0 || g_Config.m_ClHookableLnCollSize > 0 || g_Config.m_ClHookableLnCollSize > 0)
++//				Graphics()->QuadsBegin();
++//			else
++//				Graphics()->LinesBegin();
  
  			ColorRGBA HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorNoColl));
 +			/* for ai */
@@ -659,18 +664,13 @@ index 99963d439..8a40ffc33 100644
  
  			vec2 OldPos = InitPos + ExDirection * CCharacterCore::PhysicalSize() * 1.5f;
  			vec2 NewPos = OldPos;
-@@ -248,13 +283,51 @@ void CPlayers::RenderHookCollLine(
- 				vec2 Pos3 = InitPos + PerpToAngle * LineWidth;
- 				IGraphics::CFreeformItem FreeformItem(Pos0.x, Pos0.y, Pos1.x, Pos1.y, Pos2.x, Pos2.y, Pos3.x, Pos3.y);
- 				Graphics()->QuadsDrawFreeform(&FreeformItem, 1);
--				Graphics()->QuadsEnd();
--			}
--			else
--			{
--				IGraphics::CLineItem LineItem(InitPos.x, InitPos.y, FinishPos.x, FinishPos.y);
--				Graphics()->LinesDraw(&LineItem, 1);
--				Graphics()->LinesEnd();
-+			} else {
+@@ -237,28 +274,52 @@ void CPlayers::RenderHookCollLine(
+ 				// invert the hook coll colors when using cl_show_hook_coll_always and +showhookcoll is pressed
+ 				HookCollColor = color_invert(HookCollColor);
+ 			}
+-			Graphics()->SetColor(HookCollColor.WithAlpha(Alpha));
+-			if(g_Config.m_ClHookCollSize > 0)
+ 			{
 +				/* for ai */
 +				vec2 e, c, p = Position;
 +				float a, HkblAlpha, FrzAlpha;
@@ -682,6 +682,7 @@ index 99963d439..8a40ffc33 100644
 +				HookableCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookableCollColor));
 +				HkblAlpha *= (float)g_Config.m_ClHookableLnCollAlpha / 100;
 +				FrzAlpha *= (float)g_Config.m_ClFreezeLnCollAlpha / 100;
++				
 +				Graphics()->SetColor(HookableCollColor.WithAlpha(HkblAlpha));
 +				for (i = 0; i < ai_NRAYS; i++) {
 +					float sc, width;
@@ -693,6 +694,7 @@ index 99963d439..8a40ffc33 100644
 +					width = 0.5f + (float)(g_Config.m_ClHookableLnCollSize - 1) * 0.25f;
 +					drawrect(Graphics(), p, e, width);
 +				}
++
 +				Graphics()->SetColor(FreezeCollColor.WithAlpha(FrzAlpha));
 +				for (i = 0; i < ai_NRAYS; i++) {
 +					float sc, width;
@@ -701,23 +703,36 @@ index 99963d439..8a40ffc33 100644
 +
 +					a = i * 2*pi / ai_NRAYS;
 +					e = p + vec2(cosf(a), sinf(a)) * (sc * ai_RAYLEN);
-+					width = 0.5f + (float)(g_Config.m_ClHookableLnCollSize - 1) * 0.25f;
++					width = 0.5f + (float)(g_Config.m_ClFreezeLnCollSize - 1) * 0.25f;
 +					drawrect(Graphics(), p, e, width);
 +				}
-+				{
-+					float LineWidth = 0.5f + (float)(g_Config.m_ClHookCollSize - 1) * 0.25f;
-+					vec2 PerpToAngle = normalize(vec2(ExDirection.y, -ExDirection.x)) * GameClient()->m_Camera.m_Zoom;
-+					vec2 Pos0 = FinishPos + PerpToAngle * -LineWidth;
-+					vec2 Pos1 = FinishPos + PerpToAngle * LineWidth;
-+					vec2 Pos2 = InitPos + PerpToAngle * -LineWidth;
-+					vec2 Pos3 = InitPos + PerpToAngle * LineWidth;
-+					IGraphics::CFreeformItem FreeformItem(Pos0.x, Pos0.y, Pos1.x, Pos1.y, Pos2.x, Pos2.y, Pos3.x, Pos3.y);
-+					Graphics()->QuadsDrawFreeform(&FreeformItem, 1);
-+				}
-+			Graphics()->QuadsEnd();
++
++				Graphics()->SetColor(HookCollColor.WithAlpha(Alpha));
+ 				float LineWidth = 0.5f + (float)(g_Config.m_ClHookCollSize - 1) * 0.25f;
+-				vec2 PerpToAngle = normalize(vec2(ExDirection.y, -ExDirection.x)) * GameClient()->m_Camera.m_Zoom;
+-				vec2 Pos0 = FinishPos + PerpToAngle * -LineWidth;
+-				vec2 Pos1 = FinishPos + PerpToAngle * LineWidth;
+-				vec2 Pos2 = InitPos + PerpToAngle * -LineWidth;
+-				vec2 Pos3 = InitPos + PerpToAngle * LineWidth;
+-				IGraphics::CFreeformItem FreeformItem(Pos0.x, Pos0.y, Pos1.x, Pos1.y, Pos2.x, Pos2.y, Pos3.x, Pos3.y);
+-				Graphics()->QuadsDrawFreeform(&FreeformItem, 1);
+-				Graphics()->QuadsEnd();
+-			}
+-			else
+-			{
+-				IGraphics::CLineItem LineItem(InitPos.x, InitPos.y, FinishPos.x, FinishPos.y);
+-				Graphics()->LinesDraw(&LineItem, 1);
+-				Graphics()->LinesEnd();
++				drawrect(Graphics(), InitPos, FinishPos, LineWidth);
  			}
++		Graphics()->QuadsEnd();
  		}
  	}
+ }
++
+ void CPlayers::RenderHook(
+ 	const CNetObj_Character *pPrevChar,
+ 	const CNetObj_Character *pPlayerChar,
 diff --git a/src/game/client/gameclient.cpp b/src/game/client/gameclient.cpp
 index d6c801442..5b616aac9 100644
 --- a/src/game/client/gameclient.cpp
