@@ -32,8 +32,8 @@ def getinput(strnums):
 	def getn():
 		return int(next(i))
 	inp = Input()
-	inp.pp.x = getn()
-	inp.pp.y = getn()
+#	inp.pp.x = getn()
+#	inp.pp.y = getn()
 	inp.vel.x = getn()
 	inp.vel.y = getn()
 	inp.hp.x = getn()
