@@ -79,8 +79,8 @@ vision = 20
 #firstobs = [0] * (vision **2 + 9)
 firstobs = [0] * (glb.totalrays + 9)
 
-alow = np.array([-1, -1, -1, 0, 0])
-ahigh = np.array([1, 1, 1, 1, 1])
+alow = np.array([0, 0, -1, 0, 0])
+ahigh = np.array([0, 0, -1, 0, 1])
 
 #olow = np.array([1] * vision**2 +
 olow = np.array([-1] * glb.totalrays + \
@@ -149,6 +149,7 @@ class KoGEnv(gym.Env):
 		hook = int(actn[4] * 2)
 
 		if hook == 1:
+			self.rwdhook += glb.hookw
 			self.hookstarted = True
 			self.hook_time = time()
 		elif self.hookstarted:
@@ -156,7 +157,7 @@ class KoGEnv(gym.Env):
 			newhook_time = time()
 			hook_dt = newhook_time - self.hook_time
 			if hook_dt < glb.minhooktime:
-				self.rwdhook += glb.hookw
+				self.rwdhook += glb.shorthookw
 
 		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
 
@@ -164,9 +165,9 @@ class KoGEnv(gym.Env):
 		input = inputs[0:9]
 		rwds = inputs[9:14]
 		inp = getinput(input)
-		hray = inputs[14:14+glb.hrays]
-		fray = inputs[14+glb.hrays:14+glb.hrays+glb.frays]
-		allrays = inputs[14:14+glb.hrays+glb.frays]
+		hray = inputs[14:14+glb.nrays]
+		fray = inputs[14+glb.nrays:14+glb.totalrays]
+		allrays = inputs[14:14+glb.totalrays]
 
 		obs = []
 #		getmaptiles(obs, glb.map, inp.pp.x // 32, inp.pp.y // 32, vision)
@@ -205,7 +206,7 @@ class KoGEnv(gym.Env):
 			self.rwdckpnt += glb.ckpntw
 
 		if self.time_alive > glb.mintimealive:
-			self.rwdtimealive += glb.timealivew
+			self.rwdtimealive += glb.timealivew * max(1, self.time_alive)
 
 		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + self.rwdspeed + \
 			self.rwdoldarea + self.rwdnewarea + self.rwdjump + self.rwdckpnt + \

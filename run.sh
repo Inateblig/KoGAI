@@ -1,13 +1,13 @@
 #!/bin/sh
 
 mapf=ddnetAI/build/AipGoresAI2checkpoints.txt
-n=1
+n=25
 
 for i in $(seq 1 $n)
 do
 	(
 		cd ddnetAI/build
-		FIFOOUT=fout$i FIFOIN=fin$i ./DDNet-AI -f settings_ddnet.cfg #> hiha$i
+		FIFOOUT=fout$i FIFOIN=fin$i ./DDNet-AI -f settings_ddnet.cfg > hiha$i
 	) &
 
 	#./ai.py
