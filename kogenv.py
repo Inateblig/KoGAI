@@ -60,8 +60,8 @@ maxvel = 6000
 maxhooklen = 1600
 firstobs = [0] * (glb.totalrays + 9)
 
-alow = np.array([0, 0, -1, 0, 0])
-ahigh = np.array([0, 0, -1, 0, 1])
+alow = np.array([-1, -1, 0, 0])
+ahigh = np.array([1, 1, 1, 1])
 
 olow = np.array([-1] * glb.totalrays + \
 	[0, 0, \
@@ -123,10 +123,15 @@ class KoGEnv(gym.Env):
 
 		dir = int(actn[0] * 2)
 		ms_distance = 200
-		tx = int(actn[1] * ms_distance)
-		ty = int(actn[2] * ms_distance)
-		jump = int(actn[3] * 2)
-		hook = int(actn[4] * 2)
+#		tx = int(actn[1] * ms_distance)
+#		ty = int(actn[2] * ms_distance)
+		tx = int(math.sin(actn[1] * math.pi) * ms_distance)
+		ty = int(-math.cos(actn[1] * math.pi) * ms_distance)
+#		print(f"{tx:05.03f}\t{ty:05.03f}")
+		jump = int(actn[2] * 2)
+		hook = int(actn[3] * 2)
+#		jump = int(actn[3] * 2)
+#		hook = int(actn[4] * 2)
 
 		if hook == 1:
 			self.rwdhook += glb.hookw
@@ -204,6 +209,7 @@ class KoGEnv(gym.Env):
 					tf.summary.scalar("individual_rewards/finish", data=self.rwdfinish, step=self.n)
 					tf.summary.scalar("individual_rewards/oldarea", data=self.rwdoldarea, step=self.n)
 					tf.summary.scalar("individual_rewards/newarea", data=self.rwdnewarea, step=self.n)
+					tf.summary.scalar("individual_rewards/curarea", data=self.rwdcurarea, step=self.n)
 					tf.summary.scalar("individual_rewards/speed", data=self.rwdspeed, step=self.n)
 					tf.summary.scalar("individual_rewards/jump", data=self.rwdjump, step=self.n)
 					tf.summary.scalar("individual_rewards/ckpnt", data=self.rwdckpnt, step=self.n)
