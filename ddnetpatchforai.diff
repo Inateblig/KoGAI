@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 38dae4940..788a1eb77 100644
+index 38dae4940..5cd486563 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -187,7 +187,7 @@ else()
@@ -15,7 +15,7 @@ index 38dae4940..788a1eb77 100644
  
  # Sources
  set_src(BASE GLOB_RECURSE src/base
-+  #For ai
++  # for ai
 +  cycbuf.cpp
 +  cycbuf.h
 +  util.h
@@ -37,10 +37,10 @@ index 38dae4940..788a1eb77 100644
      component.cpp
 diff --git a/src/base/cycbuf.cpp b/src/base/cycbuf.cpp
 new file mode 100644
-index 000000000..f79df5433
+index 000000000..f8dcd5e00
 --- /dev/null
 +++ b/src/base/cycbuf.cpp
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,40 @@
 +#include <string.h>
 +
 +#include "util.h"
@@ -58,7 +58,7 @@ index 000000000..f79df5433
 +void
 +cbadd(struct cycbuf *cb, void *elp)
 +{
-+	memcpy(cbelmat(cb, cb->fp + cb->nea), elp, cb->elsz);
++	memcpy(cbelmat(cb, cb->nea), elp, cb->elsz);
 +
 +	if (cb->nea < cb->nelm)
 +		cb->nea++;
@@ -72,20 +72,23 @@ index 000000000..f79df5433
 +	if (!cb->nea)
 +		return 0;
 +	cb->nea--;
-+	return cbelmat(cb, cb->fp++);
++	cb->fp++;
++	return cbelmat(cb, -1);
 +}
 +
 +void *
 +cbelmat(struct cycbuf *cb, size_t idx)
 +{
-+	return (char *)cb->buf + idx % cb->nelm * cb->elsz;
++	return (char *)cb->buf + (cb->fp + idx) % cb->nelm * cb->elsz;
 +}
 diff --git a/src/base/cycbuf.h b/src/base/cycbuf.h
 new file mode 100644
-index 000000000..db9004744
+index 000000000..b44a5e043
 --- /dev/null
 +++ b/src/base/cycbuf.h
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,13 @@
++#include "util.h"
++
 +struct cycbuf {
 +	size_t elsz;
 +	size_t nelm;
@@ -309,14 +312,14 @@ index 000000000..f5eec5381
 +	T A, T B, T C, T D, T E, T F, T G, T H
 diff --git a/src/engine/client/ai.h b/src/engine/client/ai.h
 new file mode 100644
-index 000000000..4d50ec185
+index 000000000..4a7a452fb
 --- /dev/null
 +++ b/src/engine/client/ai.h
-@@ -0,0 +1,13 @@
-+#include <game/generated/protocol.h>
-+
+@@ -0,0 +1,17 @@
 +#define ai_NRAYS 8
 +#define ai_RAYLEN (32 * 16)
++
++#define ai_AREADIM (g_Config.m_ClAreaSize)
 +
 +extern CNetObj_PlayerInput ai_inp;
 +extern int ai_gaveinp;
@@ -326,6 +329,10 @@ index 000000000..4d50ec185
 +extern int ai_CID;
 +extern float ai_htds[ai_NRAYS];
 +extern float ai_ftds[ai_NRAYS];
++
++extern struct area ai_curarea;
++extern struct cycbuf ai_prevareas;
++
 diff --git a/src/engine/client/client.cpp b/src/engine/client/client.cpp
 index 6c8ecce98..9d3539acf 100644
 --- a/src/engine/client/client.cpp
@@ -431,20 +438,26 @@ index 000000000..0f77a2ce0
 +extern const char *prognm;
 +extern struct fifo fifoout, fifoin;
 diff --git a/src/engine/shared/config_variables.h b/src/engine/shared/config_variables.h
-index d8fd9eee4..58500ce35 100644
+index d8fd9eee4..6356b369b 100644
 --- a/src/engine/shared/config_variables.h
 +++ b/src/engine/shared/config_variables.h
-@@ -386,6 +386,15 @@ MACRO_CONFIG_COL(ClHookCollColorNoColl, cl_hook_coll_color_no_coll, 65407, CFGFL
+@@ -386,6 +386,21 @@ MACRO_CONFIG_COL(ClHookCollColorNoColl, cl_hook_coll_color_no_coll, 65407, CFGFL
  MACRO_CONFIG_COL(ClHookCollColorHookableColl, cl_hook_coll_color_hookable_coll, 6401973, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of a hookline that hits hookable tiles.")
  MACRO_CONFIG_COL(ClHookCollColorTeeColl, cl_hook_coll_color_tee_coll, 2817919, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of a hookline that hits tees.")
  
 +/* for ai */
++/* rays */
 +MACRO_CONFIG_COL(ClFreezeCollColor, cl_freeze_coll_hkln_color, 9306015, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the freeze collision line.")
 +MACRO_CONFIG_COL(ClHookableCollColor, cl_hookable_coll_hkln_color, 1179449, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the hookable collision line.")
 +MACRO_CONFIG_INT(ClFreezeLnCollSize, cl_freezeln_coll_size, 5, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Size of hook collision line")
 +MACRO_CONFIG_INT(ClHookableLnCollSize, cl_hookableln_coll_size, 10, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Size of hook collision line")
 +MACRO_CONFIG_INT(ClFreezeLnCollAlpha, cl_freezeln_coll_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of hook collision line (0 invisible, 100 fully visible)")
 +MACRO_CONFIG_INT(ClHookableLnCollAlpha, cl_hookableln_coll_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of hook collision line (0 invisible, 100 fully visible)")
++/* areas */
++MACRO_CONFIG_COL(ClAreaColor, cl_area_color, 0, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the starting area.")
++MACRO_CONFIG_COL(ClPrevAreaColor, cl_prev_area_color, 16777087, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the starting area.")
++MACRO_CONFIG_INT(ClAreaSize, cl_area_size, 80, 1, 300, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the size of the area.")
++MACRO_CONFIG_INT(ClAreaAlpha, cl_area_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of the area (0 invisible, 100 fully visible).")
 +
 +
  MACRO_CONFIG_INT(ClChatTeamColors, cl_chat_teamcolors, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show names in chat in team colors")
@@ -513,18 +526,23 @@ index 05d26098e..d1c73f4e5 100644
  	m_LastData[g_Config.m_ClDummy] = m_InputData[g_Config.m_ClDummy];
  
 diff --git a/src/game/client/components/hud.cpp b/src/game/client/components/hud.cpp
-index 35e9522e5..c27ea182c 100644
+index 35e9522e5..65ff425f1 100644
 --- a/src/game/client/components/hud.cpp
 +++ b/src/game/client/components/hud.cpp
-@@ -3,6 +3,7 @@
- #include <engine/graphics.h>
- #include <engine/shared/config.h>
- #include <engine/textrender.h>
-+#include <engine/client/ai.h>
+@@ -16,6 +16,12 @@
  
- #include <game/client/animstate.h>
- #include <game/client/components/scoreboard.h>
-@@ -874,6 +875,7 @@ void CHud::RenderPlayerState(const int ClientID)
+ #include <cmath>
+ 
++/* for ai */
++#include <base/cycbuf.h>
++#include <game/generated/protocol.h>
++#include <game/client/area.h>
++#include <engine/client/ai.h>
++
+ #include "binds.h"
+ #include "camera.h"
+ #include "controls.h"
+@@ -874,6 +880,7 @@ void CHud::RenderPlayerState(const int ClientID)
  		}
  		TotalJumpsToDisplay = maximum(minimum(abs(pCharacter->m_Jumps), 10), 0);
  		AvailableJumpsToDisplay = maximum(minimum(UnusedJumps, TotalJumpsToDisplay), 0);
@@ -593,30 +611,33 @@ index 87f30d452..54f6437a2 100644
  	else if(s_CurTab == 1)
  	{ // ***** CHAT TAB ***** //
 diff --git a/src/game/client/components/players.cpp b/src/game/client/components/players.cpp
-index 99963d439..4481524c7 100644
+index 99963d439..5922af2e5 100644
 --- a/src/game/client/components/players.cpp
 +++ b/src/game/client/components/players.cpp
-@@ -21,6 +21,12 @@
+@@ -21,6 +21,15 @@
  
  #include <base/color.h>
  
 +/* for ai */
++#include <base/util.h>
++#include <base/do.h>
++#include <base/cycbuf.h>
++#include <game/generated/protocol.h>
++#include <game/client/area.h>
 +#include <engine/client/ai.h>
 +#include <engine/client/graphics_threaded.h>
-+#include <base/do.h>
-+#include <base/util.h>
 +
  void CPlayers::RenderHand(CTeeRenderInfo *pInfo, vec2 CenterPos, vec2 Dir, float AngleOffset, vec2 PostRotOffset, float Alpha)
  {
  	vec2 HandPos = CenterPos + Dir;
-@@ -117,6 +123,32 @@ float CPlayers::GetPlayerTargetAngle(
+@@ -117,6 +126,41 @@ float CPlayers::GetPlayerTargetAngle(
  	}
  }
  
 +/* for ai */
 +
 +intern void
-+drawrect(IGraphics *gfx, FPARS(vec2, a, b), float w)
++drawfatline(IGraphics *gfx, FPARS(vec2, a, b), float w)
 +{
 +	vec2 p[4], n, d;
 +
@@ -639,10 +660,19 @@ index 99963d439..4481524c7 100644
 +	gfx->QuadsDrawFreeform(&ffi, 1);
 +}
 +
++intern void
++drawsquare(IGraphics *gfx, vec2 a, float d)
++{
++	IGraphics::CQuadItem qi(a.x, a.y, d, d);
++	gfx->QuadsDraw(&qi, 1);
++}
++
++
++
  void CPlayers::RenderHookCollLine(
  	const CNetObj_Character *pPrevChar,
  	const CNetObj_Character *pPlayerChar,
-@@ -178,12 +210,17 @@ void CPlayers::RenderHookCollLine(
+@@ -178,12 +222,17 @@ void CPlayers::RenderHookCollLine(
  			vec2 InitPos = Position;
  			vec2 FinishPos = InitPos + ExDirection * (m_pClient->m_Tuning[g_Config.m_ClDummy].m_HookLength - 42.0f);
  
@@ -664,7 +694,7 @@ index 99963d439..4481524c7 100644
  
  			vec2 OldPos = InitPos + ExDirection * CCharacterCore::PhysicalSize() * 1.5f;
  			vec2 NewPos = OldPos;
-@@ -237,28 +274,52 @@ void CPlayers::RenderHookCollLine(
+@@ -237,28 +286,83 @@ void CPlayers::RenderHookCollLine(
  				// invert the hook coll colors when using cl_show_hook_coll_always and +showhookcoll is pressed
  				HookCollColor = color_invert(HookCollColor);
  			}
@@ -690,9 +720,9 @@ index 99963d439..4481524c7 100644
 +					sc = ai_htds[i] >= 0 ? ai_htds[i] : 1;
 +
 +					a = i * 2*pi / ai_NRAYS;
-+					e = p + vec2(cosf(a), sinf(a)) * (sc * ai_RAYLEN);
++					e = p + vec2(sinf(a), -cosf(a)) * (sc * ai_RAYLEN);
 +					width = 0.5f + (float)(g_Config.m_ClHookableLnCollSize - 1) * 0.25f;
-+					drawrect(Graphics(), p, e, width);
++					drawfatline(Graphics(), p, e, width);
 +				}
 +
 +				Graphics()->SetColor(FreezeCollColor.WithAlpha(FrzAlpha));
@@ -702,9 +732,9 @@ index 99963d439..4481524c7 100644
 +					sc = ai_htds[i] >= 0 ? ai_htds[i] : 1;
 +
 +					a = i * 2*pi / ai_NRAYS;
-+					e = p + vec2(cosf(a), sinf(a)) * (sc * ai_RAYLEN);
++					e = p + vec2(sinf(a), -cosf(a)) * (sc * ai_RAYLEN);
 +					width = 0.5f + (float)(g_Config.m_ClFreezeLnCollSize - 1) * 0.25f;
-+					drawrect(Graphics(), p, e, width);
++					drawfatline(Graphics(), p, e, width);
 +				}
 +
 +				Graphics()->SetColor(HookCollColor.WithAlpha(Alpha));
@@ -723,18 +753,73 @@ index 99963d439..4481524c7 100644
 -				IGraphics::CLineItem LineItem(InitPos.x, InitPos.y, FinishPos.x, FinishPos.y);
 -				Graphics()->LinesDraw(&LineItem, 1);
 -				Graphics()->LinesEnd();
-+				drawrect(Graphics(), InitPos, FinishPos, LineWidth);
++				drawfatline(Graphics(), InitPos, FinishPos, LineWidth);
  			}
 +		Graphics()->QuadsEnd();
  		}
  	}
  }
 +
++/* area draw for ai */
++void CPlayers::RenderAreas(
++	const CNetObj_Character *pPrevChar,
++	const CNetObj_Character *pPlayerChar,
++	int ClientID,
++	float Intra)
++{
++	Graphics()->QuadsBegin();
++	struct area *a;
++	vec2 p;
++	float AreaAlpha = 1;
++	size_t i;
++
++	AreaAlpha *= (float)g_Config.m_ClAreaAlpha / 100;
++	ColorRGBA PrevAreaColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClPrevAreaColor));
++	Graphics()->SetColor(PrevAreaColor.WithAlpha(AreaAlpha));
++	for (i = 1; i <= ai_prevareas.nea; i++) {
++		a = (struct area *)cbelmat(&ai_prevareas, ai_prevareas.fp + ai_prevareas.nea - i);
++		p = vec2(a->c.x, a->c.y);
++		drawsquare(Graphics(), p, a->d * 2);
++//		printf("p_{%ld}=(%f,%f)\n", i, p.x, -p.y);
++	}
++	ColorRGBA AreaColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClAreaColor));
++	Graphics()->SetColor(AreaColor.WithAlpha(AreaAlpha));
++	p = vec2(ai_curarea.c.x, ai_curarea.c.y);
++	drawsquare(Graphics(), p, ai_curarea.d * 2);
++//	printf("p_{cur}=(%f,%f)\n", p.x, -p.y);
++
++	Graphics()->QuadsEnd();
++}
++
  void CPlayers::RenderHook(
  	const CNetObj_Character *pPrevChar,
  	const CNetObj_Character *pPlayerChar,
+@@ -816,6 +920,7 @@ void CPlayers::OnRender()
+ 	{
+ 		const CGameClient::CClientData *pLocalClientData = &m_pClient->m_aClients[LocalClientID];
+ 		RenderHookCollLine(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, LocalClientID);
++		RenderAreas(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, LocalClientID);
+ 		RenderPlayer(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, &m_aRenderInfo[LocalClientID], LocalClientID);
+ 	}
+ }
+diff --git a/src/game/client/components/players.h b/src/game/client/components/players.h
+index 470448276..0ecac8b6a 100644
+--- a/src/game/client/components/players.h
++++ b/src/game/client/components/players.h
+@@ -31,6 +31,11 @@ class CPlayers : public CComponent
+ 		const CNetObj_Character *pPlayerChar,
+ 		int ClientID,
+ 		float Intra = 0.f);
++	void RenderAreas(
++		const CNetObj_Character *pPrevChar,
++		const CNetObj_Character *pPlayerChar,
++		int ClientID,
++		float Intra = 0.f);
+ 	float GetPlayerTargetAngle(
+ 		const CNetObj_Character *pPrevChar,
+ 		const CNetObj_Character *pPlayerChar,
 diff --git a/src/game/client/gameclient.cpp b/src/game/client/gameclient.cpp
-index d6c801442..5b616aac9 100644
+index d6c801442..3aedecec6 100644
 --- a/src/game/client/gameclient.cpp
 +++ b/src/game/client/gameclient.cpp
 @@ -30,6 +30,7 @@
@@ -745,7 +830,47 @@ index d6c801442..5b616aac9 100644
  
  #include "gameclient.h"
  
-@@ -1225,7 +1226,7 @@ void CGameClient::OnNewSnapshot()
+@@ -69,6 +70,12 @@
+ #include "prediction/entities/character.h"
+ #include "prediction/entities/projectile.h"
+ 
++/* for ai */
++#include <base/cycbuf.h>
++#include <game/generated/protocol.h>
++#include <game/client/area.h>
++#include <engine/client/ai.h>
++
+ using namespace std::chrono_literals;
+ 
+ const char *CGameClient::Version() const { return GAME_VERSION; }
+@@ -888,6 +895,7 @@ void CGameClient::OnRconLine(const char *pLine)
+ 
+ void CGameClient::ProcessEvents()
+ {
++	static int τελαποθανῶν = -1;
+ 	if(m_SuppressEvents)
+ 		return;
+ 
+@@ -917,11 +925,18 @@ void CGameClient::ProcessEvents()
+ 		{
+ 			CNetEvent_Spawn *ev = (CNetEvent_Spawn *)pData;
+ 			m_Effects.PlayerSpawn(vec2(ev->m_X, ev->m_Y));
++			/* for ai */
++//			printf("Spawevent, τελαποθ:%d (ai_CID:%d)\n", τελαποθανῶν, ai_CID);
++			if (τελαποθανῶν == ai_CID) {
++				ai_curarea.c = vec2(ev->m_X, ev->m_Y);
++				ai_prevareas.nea = 0;
++			}
+ 		}
+ 		else if(Item.m_Type == NETEVENTTYPE_DEATH)
+ 		{
+ 			CNetEvent_Death *ev = (CNetEvent_Death *)pData;
+ 			m_Effects.PlayerDeath(vec2(ev->m_X, ev->m_Y), ev->m_ClientID);
++			τελαποθανῶν = ev->m_ClientID;
+ 		}
+ 		else if(Item.m_Type == NETEVENTTYPE_SOUNDWORLD)
+ 		{
+@@ -1225,7 +1240,7 @@ void CGameClient::OnNewSnapshot()
  
  					if(pInfo->m_Local)
  					{
@@ -755,7 +880,7 @@ index d6c801442..5b616aac9 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..9b605a3ab 100644
+index 54e739bdc..c6ced6e3b 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
 @@ -3,6 +3,21 @@
@@ -769,14 +894,14 @@ index 54e739bdc..9b605a3ab 100644
 +#include <errno.h>
 +#include <poll.h>
 +
-+//for ai
-+#include <engine/client/ai.h>
-+#include <engine/client/fifo.h>
++/* for ai */
 +#include <base/util.h>
 +#include <base/cycbuf.h>
++#include <game/generated/protocol.h>
 +#include <game/client/area.h>
-+#include <base/math.h>
 +#include <engine/client/ai.h>
++#include <engine/client/fifo.h>
++#include <base/math.h>
  
  #include "character.h"
  #include "laser.h"
@@ -787,9 +912,9 @@ index 54e739bdc..9b605a3ab 100644
 +#define V2F "%d %d"
 +#define V2A(V) (int)(V).x, (int)(V).y
 +
-+intern struct area prevareabuf[32];
-+intern struct area curarea;
-+intern struct cycbuf prevareas;
++struct area ai_curarea;
++struct cycbuf ai_prevareas;
++intern struct area prevareabuf[128];
 +
 +bool ColSF(CCollision *pCollision, vec2 Prev, vec2 Pos, int TILE) {
 +//	CCollision *pCollision = pClient->Collision();
@@ -822,7 +947,7 @@ index 54e739bdc..9b605a3ab 100644
 +
 +	for (i = 0; i < nd; i++) {
 +		a = i * 2*pi / nd;
-+		e = vec2(cosf(a), sinf(a)) * ai_RAYLEN;
++		e = vec2(sinf(a), -cosf(a)) * ai_RAYLEN;
 +		if ((t = cln->IntersectLineAllTiles(p, p + e, &cp, 0)) && t == tile)
 +			ds[i] = length(cp - p) / ai_RAYLEN;
 +		else
@@ -833,36 +958,24 @@ index 54e739bdc..9b605a3ab 100644
  void CCharacter::SetWeapon(int W)
  {
  	if(W == m_Core.m_ActiveWeapon)
-@@ -553,13 +614,156 @@ void CCharacter::ResetInput()
+@@ -553,13 +614,155 @@ void CCharacter::ResetInput()
  	m_LatestPrevInput = m_LatestInput = m_Input;
  }
  
++/* for ai */
 +intern int
 +ckareas(struct area *cur, struct cycbuf *prev, vec2 p)
 +{
-+	#define new new_ /* zogtib big troll */
-+	struct area *a, new;
++	struct area *a;
 +	size_t i;
 +
 +	#define ARF V2F " %d"
 +	#define ARA(A) V2A((A).c), (A).d
 +
-+//	printf("p:" V2F " -- " ARF, V2A(p), ARA(*cur));
-+	new = *cur;
-+	if (p.x < cur->c.x - cur->d)
-+		new.c.x -= 2 * cur->d;
-+	else if (p.x > cur->c.x + cur->d)
-+		new.c.x += 2 * cur->d;
-+	else if (p.y < cur->c.y - cur->d)
-+		new.c.y -= 2 * cur->d;
-+	else if (p.y > cur->c.y + cur->d)
-+		new.c.y += 2 * cur->d;
-+	else {
-+//		printf(" in\n");
++//	printf("p:" V2F " -- " ARF "\n", V2A(p), ARA(*cur));
++	if (areahaspos(cur, p))
 +		return 0;
-+	}
 +
-+//	printf("\n");
 +	for (i = 1; i <= prev->nea; i++) {
 +		a = (struct area *)cbelmat(prev, prev->fp + prev->nea - i);
 +//		printf("pa[%d]: " ARF "\n", (int)i, ARA(*a));
@@ -870,15 +983,23 @@ index 54e739bdc..9b605a3ab 100644
 +			goto cut;
 +	}
 +//	printf("got to new area\n");
-+	cbadd(prev, cur);
-+	*cur = new;
++	do {
++		cbadd(prev, cur);
++		if (p.x < cur->c.x - cur->d)
++			cur->c.x -= 2 * cur->d;
++		else if (p.x > cur->c.x + cur->d)
++			cur->c.x += 2 * cur->d;
++		else if (p.y < cur->c.y - cur->d)
++			cur->c.y -= 2 * cur->d;
++		else if (p.y > cur->c.y + cur->d)
++			cur->c.y += 2 * cur->d;
++	} while (!areahaspos(cur, p));
 +	return 1;
 +cut:
-+//	printf("move your a**\n");
++//	printf("move your a** elsewhere \n");
 +	prev->nea -= i;
 +	*cur = *a;
 +	return -(int)i;
-+	#undef new
 +}
 +
  void CCharacter::Tick()
@@ -934,6 +1055,9 @@ index 54e739bdc..9b605a3ab 100644
  	m_Core.Tick(true);
  
 +	if (m_ID == ai_CID) {
++		ai_curarea.d = ai_AREADIM;
++		ckareas(&ai_curarea, &ai_prevareas, m_Core.m_Pos);
++
 +		static struct {
 +			int freeze;
 +			int start;
@@ -945,7 +1069,7 @@ index 54e739bdc..9b605a3ab 100644
 +
 +//		if (!areahaspos(&curarea, m_Core.m_Pos) && !curarea.c.x && !curarea.c.y)
 +		int i;
-+		if ((i = ckareas(&curarea, &prevareas, m_Core.m_Pos)) < 0)
++		if ((i = ckareas(&ai_curarea, &ai_prevareas, m_Core.m_Pos)) < 0)
 +			rwd.area = i;
 +		else if (i > 0)
 +			rwd.area = 1;
@@ -990,24 +1114,24 @@ index 54e739bdc..9b605a3ab 100644
  	// handle Weapons
  	HandleWeapons();
  
-@@ -1146,6 +1350,9 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
+@@ -1146,6 +1349,10 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
  
  	m_LatestPrevInput = m_LatestInput = m_PrevInput = m_SavedInput = m_Input;
  
-+	cbinit(&prevareas, sizeof(struct area), NELM(prevareabuf), prevareabuf);
-+	curarea.d = 5 * 32;
++	/* for ai */
++	cbinit(&ai_prevareas, sizeof(struct area), NELM(prevareabuf), prevareabuf);
++	ai_curarea.d = ai_AREADIM;
 +
  	ResetPrediction();
  	Read(pChar, pExtended, pExtendedDisplayInfo, false);
  }
-@@ -1181,6 +1388,10 @@ void CCharacter::ResetPrediction()
+@@ -1181,6 +1388,9 @@ void CCharacter::ResetPrediction()
  	}
  	m_LastWeaponSwitchTick = 0;
  	m_LastTuneZoneTick = 0;
 +
 +	/* for ai */
-+	prevareas.nea = 0;
-+	curarea.c = vec2{};
++//	printf("resetprediciton\n");
  }
  
  void CCharacter::Read(CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtended, CNetObj_DDNetCharacterDisplayInfo *pExtendedDisplayInfo, bool IsLocal)
