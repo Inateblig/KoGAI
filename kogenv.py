@@ -43,22 +43,6 @@ def getinput(strnums):
 	inp.njum = getn()
 	return inp
 
-def getmaptiles(appto, map, px, py, r):
-	r2 = r // 2
-	fy = int(py) - r2
-	fx = int(px) - r2
-
-	for y in range(r):
-		my = fy + y
-		for x in range(r):
-			mx = fx + x
-			if my < 0 or my >= len(map) or \
-			mx < 0 or mx >= len(map[my]):
-				t = 0 # air tile
-			else:
-				t = map[my][mx]
-			appto.append(t)
-
 def fifowrite(fout, dir, tx, ty, j, h, sk, pr):
 	out = ("{} {} {} {} {} {}\n".format(
 		dir, # dir
@@ -74,22 +58,17 @@ def fifowrite(fout, dir, tx, ty, j, h, sk, pr):
 
 maxvel = 6000
 maxhooklen = 1600
-nangles = 180
-vision = 20
-#firstobs = [0] * (vision **2 + 9)
 firstobs = [0] * (glb.totalrays + 9)
 
 alow = np.array([0, 0, -1, 0, 0])
 ahigh = np.array([0, 0, -1, 0, 1])
 
-#olow = np.array([1] * vision**2 +
 olow = np.array([-1] * glb.totalrays + \
 	[0, 0, \
 	-maxvel, -maxvel, \
 	-maxhooklen, -maxhooklen, \
 	0, 0, 0 \
 	])
-#ohigh = np.array([256] * vision**2 +
 ohigh = np.array([1] * glb.totalrays + \
 	[32, 32, \
 	maxvel, maxvel, \
@@ -110,6 +89,7 @@ class KoGEnv(gym.Env):
 	rwdfinish = 0
 	rwdoldarea = 0
 	rwdnewarea = 0
+	rwdcurarea = 0
 	rwdjump = 0
 	rwdckpnt = 0
 	rwdhook = 0
@@ -170,13 +150,11 @@ class KoGEnv(gym.Env):
 		allrays = inputs[14:14+glb.totalrays]
 
 		obs = []
-#		getmaptiles(obs, glb.map, inp.pp.x // 32, inp.pp.y // 32, vision)
 		obs.extend(allrays)
 		obs.extend([c % 32 for c in v2tolist(inp.pp)])
 		obs.extend([c + maxvel for c in v2tolist(inp.vel)])
 		obs.extend([inp.hp.x - inp.pp.x + maxhooklen, inp.hp.y - inp.pp.x + maxhooklen])
 		obs.extend([inp.hs + 1, inp.dir + 1, inp.njum])
-#		print(obs[vision**2:])
 
 		if int(rwds[0]) == 1:
 			self.rwdfreeze += glb.freezew
@@ -194,6 +172,8 @@ class KoGEnv(gym.Env):
 			self.rwdoldarea += glb.oldareaw * (int(rwds[3]) - 1)
 		elif int(rwds[3]) > 0:
 			self.rwdnewarea += glb.newareaw
+		else:
+			self.rwdcurarea += glb.curareaw
 
 		if (abs(math.sqrt(inp.vel.x**2 + inp.vel.y**2))) >= self.spdthres:
 			self.rwdspeed += glb.speedw

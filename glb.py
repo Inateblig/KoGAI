@@ -3,16 +3,17 @@ from datetime import datetime
 
 stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-nenvs = 25
+nenvs = 1
 
 freezew = -1
-startw = 0.5
-finishw = 9.0
+startw = 0.7
+finishw = 10.0
 speedw = -0.0001
-oldareaw = 0.0
-newareaw = 0.0
+oldareaw = 0.01
+newareaw = 0.01
+curareaw = -0.001
 jumpw = -0.01
-ckpnt = 0.1
+ckpnt = 0.7
 hookw = 0.0015
 shorthookw = -0.01
 timealivew = 0.01
