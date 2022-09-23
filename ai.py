@@ -39,9 +39,9 @@ if not os.path.exists(logdir):
 n_envs = len(glb.fifofs)
 iters = 10
 #nstp = 16384
-nstp = 1028
+nstp = 2048
 lr = 0.0005
-bs = 1028
+bs = 2048
 TOTALTIMESTEPS = nstp * iters * n_envs
 
 env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)

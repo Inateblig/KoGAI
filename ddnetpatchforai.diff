@@ -880,7 +880,7 @@ index d6c801442..3aedecec6 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..d9b4d8716 100644
+index 54e739bdc..4a2631ae9 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
 @@ -3,6 +3,21 @@
@@ -905,7 +905,7 @@ index 54e739bdc..d9b4d8716 100644
  
  #include "character.h"
  #include "laser.h"
-@@ -10,6 +25,52 @@
+@@ -10,6 +25,53 @@
  
  // Character, "physical" player's part
  
@@ -920,6 +920,7 @@ index 54e739bdc..d9b4d8716 100644
 +//	CCollision *pCollision = pClient->Collision();
 +	std::list<int> Indices = pCollision->GetMapIndices(Prev, Pos);
 +	if(!Indices.empty())
++	{
 +		for(int &Indice : Indices)
 +		{
 +			if(pCollision->GetTileIndex(Indice) == TILE)
@@ -927,7 +928,7 @@ index 54e739bdc..d9b4d8716 100644
 +			if(pCollision->GetFTileIndex(Indice) == TILE)
 +				return true;
 +		}
-+	else
++	} else
 +	{
 +		if(pCollision->GetTileIndex(pCollision->GetPureMapIndex(Pos)) == TILE)
 +			return true;
@@ -958,7 +959,7 @@ index 54e739bdc..d9b4d8716 100644
  void CCharacter::SetWeapon(int W)
  {
  	if(W == m_Core.m_ActiveWeapon)
-@@ -553,13 +614,153 @@ void CCharacter::ResetInput()
+@@ -553,13 +615,167 @@ void CCharacter::ResetInput()
  	m_LatestPrevInput = m_LatestInput = m_Input;
  }
  
@@ -1083,28 +1084,42 @@ index 54e739bdc..d9b4d8716 100644
 +			rwd.finish = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FINISH)) ? 1 : 0;
 +			rwd.selfkill = ai_selfkill ? 1 : 0;
 +			int ckpnt;
-+			for (ckpnt = TILE_CHECKPOINT_FIRST; ckpnt < TILE_CHECKPOINT_LAST; ckpnt++)
-+				rwd.ckpnt = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, ckpnt)) ? 1 : 0;
++			rwd.ckpnt = 0;
++			for (ckpnt = TILE_CHECKPOINT_FIRST; ckpnt < TILE_CHECKPOINT_LAST; ckpnt++) {
++				if (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, ckpnt)) {
++					rwd.ckpnt = 1;
++					printf("rwd.ckpnt %d\n", rwd.ckpnt);
++					break;
++				}
++			}
++			vec2 hp = (m_Core.m_HookPos - m_Core.m_Pos);
++			vec2 vel = (m_Core.m_Vel);
 +
-+			fprintf(fifoout.f, V2F " " V2F " " V2F " %d %d %d" " %d %d %d %d" " %d",
-+				V2A(m_Core.m_Pos), V2A(m_Core.m_Vel), V2A(m_Core.m_HookPos),
-+				m_Core.m_HookState, m_Core.m_Direction, ai_availjumps,
-+				rwd.freeze, rwd.start, rwd.finish, rwd.area,
-+				rwd.ckpnt);
++			fprintf(fifoout.f, V2F " " V2F " %d %d" " %d %d %d %d %d",
++				V2A(vel), V2A(hp),
++				m_Core.m_HookState, ai_availjumps,
++				rwd.freeze, rwd.start, rwd.finish, rwd.area, rwd.ckpnt);
 +			size_t idx;
 +			for (idx = 0; idx < NELM(ai_htds); idx++) {
-+				fprintf(fifoout.f, " %f", ai_htds[idx]);
++				fprintf(fifoout.f, " %a", ai_htds[idx]);
 +			}
 +			for (idx = 0; idx < NELM(ai_ftds); idx++) {
-+				fprintf(fifoout.f, " %f", ai_ftds[idx]);
++				fprintf(fifoout.f, " %a", ai_ftds[idx]);
 +			}
 +			fprintf(fifoout.f, "\n");
-+//			printf("cid: %d " V2F " " V2F " " V2F " %d %d %d" " %d %d %d\n",
-+//				ai_CID,
-+//				V2A(m_Core.m_Pos), V2A(m_Core.m_Vel), V2A(m_Core.m_HookPos),
-+//				m_Core.m_HookState, m_Core.m_Direction, ai_availjumps,
-+//				rwd.freeze, rwd.start, rwd.finish);
 +			fflush(fifoout.f);
++
++//			printf(V2F " " V2F " %d %d" " %d %d %d %d %d",
++//				V2A(vel), V2A(hp),
++//				m_Core.m_HookState, ai_availjumps,
++//				rwd.freeze, rwd.start, rwd.finish, rwd.area, rwd.ckpnt);
++//			for (idx = 0; idx < NELM(ai_htds); idx++) {
++//				printf(" %f", ai_htds[idx]);
++//			}
++//			for (idx = 0; idx < NELM(ai_ftds); idx++) {
++//				printf(" %f", ai_ftds[idx]);
++//			}
++//			printf("\n");
 +			haveread = 0;
 +		}
 +	}
@@ -1112,7 +1127,7 @@ index 54e739bdc..d9b4d8716 100644
  	// handle Weapons
  	HandleWeapons();
  
-@@ -1146,6 +1347,10 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
+@@ -1146,6 +1362,10 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
  
  	m_LatestPrevInput = m_LatestInput = m_PrevInput = m_SavedInput = m_Input;
  
@@ -1123,7 +1138,7 @@ index 54e739bdc..d9b4d8716 100644
  	ResetPrediction();
  	Read(pChar, pExtended, pExtendedDisplayInfo, false);
  }
-@@ -1181,6 +1386,9 @@ void CCharacter::ResetPrediction()
+@@ -1181,6 +1401,9 @@ void CCharacter::ResetPrediction()
  	}
  	m_LastWeaponSwitchTick = 0;
  	m_LastTuneZoneTick = 0;

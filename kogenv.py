@@ -16,30 +16,21 @@ class vec2:
 		self.y = y
 
 class Input:
-	pp = vec2()
 	vel = vec2()
 	hp = vec2() # hook pos
 	hs = 0 # hook state
-	dir = 0
 	njum = 0
-
-
-def v2tolist(v: vec2):
-	return [v.x, v.y]
 
 def getinput(strnums):
 	i = iter(strnums)
 	def getn():
 		return int(next(i))
 	inp = Input()
-#	inp.pp.x = getn()
-#	inp.pp.y = getn()
-	inp.vel.x = getn()
-	inp.vel.y = getn()
-	inp.hp.x = getn()
-	inp.hp.y = getn()
+	inp.vel.x = getn() / 32
+	inp.vel.y = getn() / 32
+	inp.hp.x = getn() / 32
+	inp.hp.y = getn() / 32
 	inp.hs = getn()
-	inp.dir = getn()
 	inp.njum = getn()
 	return inp
 
@@ -56,24 +47,22 @@ def fifowrite(fout, dir, tx, ty, j, h, sk, pr):
 	if pr:
 		print(out)
 
-maxvel = 6000
-maxhooklen = 1600
-firstobs = [0] * (glb.totalrays + 9)
+maxvel = 6000 / 32
+maxhooklen = 800 / 32
+firstobs = [0] * (glb.totalrays + 6)
 
 alow = np.array([-1, -1, 0, 0])
 ahigh = np.array([1, 1, 1, 1])
 
 olow = np.array([-1] * glb.totalrays + \
-	[0, 0, \
-	-maxvel, -maxvel, \
+	[-maxvel, -maxvel, \
 	-maxhooklen, -maxhooklen, \
-	0, 0, 0 \
+	0, 0 \
 	])
 ohigh = np.array([1] * glb.totalrays + \
-	[32, 32, \
-	maxvel, maxvel, \
+	[maxvel, maxvel, \
 	maxhooklen, maxhooklen, \
-	7, 3, 3 \
+	7, 3 \
 	])
 
 class KoGEnv(gym.Env):
@@ -147,35 +136,32 @@ class KoGEnv(gym.Env):
 		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
 
 		inputs = self.fin.readline().split()
-		input = inputs[0:9]
-		rwds = inputs[9:14]
+		input = inputs[0:6]
 		inp = getinput(input)
-		hray = inputs[14:14+glb.nrays]
-		fray = inputs[14+glb.nrays:14+glb.totalrays]
-		allrays = inputs[14:14+glb.totalrays]
+		rwds = [int(i) for i in inputs[6:11]]
+		allrays = inputs[11:]
 
 		obs = []
-		obs.extend(allrays)
-		obs.extend([c % 32 for c in v2tolist(inp.pp)])
-		obs.extend([c + maxvel for c in v2tolist(inp.vel)])
-		obs.extend([inp.hp.x - inp.pp.x + maxhooklen, inp.hp.y - inp.pp.x + maxhooklen])
-		obs.extend([inp.hs + 1, inp.dir + 1, inp.njum])
+		obs.extend([float.fromhex(x) for x in allrays])
+		obs.extend([inp.vel.x, inp.vel.y])
+		obs.extend([inp.hp.x, inp.hp.y])
+		obs.extend([inp.hs, inp.njum])
 
-		if int(rwds[0]) == 1:
+		if rwds[0] == 1:
 			self.rwdfreeze += glb.freezew
 #			print("donefreeze")
 			self.isdone = True
-		if int(rwds[1]) == 1 and self.hasstarted == False:
+		if rwds[1] == 1 and self.hasstarted == False:
 			self.rwdstart += glb.startw
 			self.hasstarted = True
-		if int(rwds[2]) == 1 and self.hasfinished == False:
+		if rwds[2] == 1 and self.hasfinished == False:
 			self.rwdfinish += glb.finishw
 			self.hasfinished = True
 #			print("finish", rwdfinish, "self.i", self.i)
 			self.isdone = True
-		if int(rwds[3]) < 0:
-			self.rwdoldarea += glb.oldareaw * (int(rwds[3]) - 1)
-		elif int(rwds[3]) > 0:
+		if rwds[3] < 0:
+			self.rwdoldarea += glb.oldareaw * (rwds[3] - 1)
+		elif rwds[3] > 0:
 			self.rwdnewarea += glb.newareaw
 		else:
 			self.rwdcurarea += glb.curareaw
@@ -187,11 +173,11 @@ class KoGEnv(gym.Env):
 		if jump > 0:
 			self.rwdjump += glb.jumpw
 
-		if int(rwds[4] == 1):
+		if rwds[4] == 1:
 			self.rwdckpnt += glb.ckpntw
 
 		if self.time_alive > glb.mintimealive:
-			self.rwdtimealive += glb.timealivew * max(1, self.time_alive)
+			self.rwdtimealive += glb.timealivew #* max(1, self.time_alive)
 
 		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + self.rwdspeed + \
 			self.rwdoldarea + self.rwdnewarea + self.rwdjump + self.rwdckpnt + \

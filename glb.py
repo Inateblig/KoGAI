@@ -13,7 +13,7 @@ oldareaw = 0.01
 newareaw = 0.01
 curareaw = -0.001
 jumpw = -0.01
-ckpnt = 0.7
+ckpntw = 0.7
 hookw = 0.0015
 shorthookw = -0.01
 timealivew = 0.01
@@ -24,7 +24,7 @@ mintimealive = 1 / env_speed
 
 totalrwd = 0
 
-nrays = 1
+nrays = 8
 totalrays = nrays * 2
 logdir = f"logs/{stamp}/log_ai_rewards"
 

@@ -6,7 +6,7 @@ for i in $(seq 1 $n)
 do
 	(
 		cd ddnetAI/build
-		FIFOOUT=fout$i FIFOIN=fin$i ./DDNet-AI -f settings_ddnet.cfg > hiha$i
+		FIFOOUT=fout$i FIFOIN=fin$i ./DDNet-AI -f settings_ddnet.cfg #> hiha$i
 	) &
 
 	#./ai.py
