@@ -880,7 +880,7 @@ index d6c801442..3aedecec6 100644
  
  						if(pInfo->m_Team == TEAM_SPECTATORS)
 diff --git a/src/game/client/prediction/entities/character.cpp b/src/game/client/prediction/entities/character.cpp
-index 54e739bdc..c6ced6e3b 100644
+index 54e739bdc..d9b4d8716 100644
 --- a/src/game/client/prediction/entities/character.cpp
 +++ b/src/game/client/prediction/entities/character.cpp
 @@ -3,6 +3,21 @@
@@ -958,7 +958,7 @@ index 54e739bdc..c6ced6e3b 100644
  void CCharacter::SetWeapon(int W)
  {
  	if(W == m_Core.m_ActiveWeapon)
-@@ -553,13 +614,155 @@ void CCharacter::ResetInput()
+@@ -553,13 +614,153 @@ void CCharacter::ResetInput()
  	m_LatestPrevInput = m_LatestInput = m_Input;
  }
  
@@ -1055,9 +1055,7 @@ index 54e739bdc..c6ced6e3b 100644
  	m_Core.Tick(true);
  
 +	if (m_ID == ai_CID) {
-+		ai_curarea.d = ai_AREADIM;
-+		ckareas(&ai_curarea, &ai_prevareas, m_Core.m_Pos);
-+
++		
 +		static struct {
 +			int freeze;
 +			int start;
@@ -1067,7 +1065,7 @@ index 54e739bdc..c6ced6e3b 100644
 +			int ckpnt;
 +		} rwd;
 +
-+//		if (!areahaspos(&curarea, m_Core.m_Pos) && !curarea.c.x && !curarea.c.y)
++		ai_curarea.d = ai_AREADIM;
 +		int i;
 +		if ((i = ckareas(&ai_curarea, &ai_prevareas, m_Core.m_Pos)) < 0)
 +			rwd.area = i;
@@ -1114,7 +1112,7 @@ index 54e739bdc..c6ced6e3b 100644
  	// handle Weapons
  	HandleWeapons();
  
-@@ -1146,6 +1349,10 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
+@@ -1146,6 +1347,10 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
  
  	m_LatestPrevInput = m_LatestInput = m_PrevInput = m_SavedInput = m_Input;
  
@@ -1125,7 +1123,7 @@ index 54e739bdc..c6ced6e3b 100644
  	ResetPrediction();
  	Read(pChar, pExtended, pExtendedDisplayInfo, false);
  }
-@@ -1181,6 +1388,9 @@ void CCharacter::ResetPrediction()
+@@ -1181,6 +1386,9 @@ void CCharacter::ResetPrediction()
  	}
  	m_LastWeaponSwitchTick = 0;
  	m_LastTuneZoneTick = 0;
@@ -1210,14 +1208,15 @@ index 1f8c316ac..b01575171 100644
  	CCharacter *pC = static_cast<CCharacter *>(GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_CHARACTER));
  	for(; pC; pC = (CCharacter *)pC->TypeNext())
 diff --git a/src/game/server/teams.cpp b/src/game/server/teams.cpp
-index 96b2c352b..cab506b35 100644
+index 96b2c352b..26103fed3 100644
 --- a/src/game/server/teams.cpp
 +++ b/src/game/server/teams.cpp
-@@ -657,6 +657,7 @@ void CGameTeams::OnTeamFinish(CPlayer **Players, unsigned int Size, float Time,
+@@ -657,6 +657,8 @@ void CGameTeams::OnTeamFinish(CPlayer **Players, unsigned int Size, float Time,
  
  void CGameTeams::OnFinish(CPlayer *Player, float Time, const char *pTimestamp)
  {
-+	return;
++	/* for ai */
++//	return;
  	if(!Player || !Player->IsPlaying())
  		return;
  	// TODO:DDRace:btd: this ugly
