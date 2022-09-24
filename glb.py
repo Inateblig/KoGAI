@@ -3,8 +3,6 @@ from datetime import datetime
 
 stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-nenvs = 1
-
 freezew = -1
 startw = 0.7
 finishw = 10.0
@@ -16,7 +14,7 @@ jumpw = -0.01
 ckpntw = 0.7
 hookw = 0.0015
 shorthookw = -0.01
-timealivew = 0.01
+timealivew = 0.00
 
 env_speed = 1
 minhooktime = 0.1 / env_speed

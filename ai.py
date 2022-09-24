@@ -48,14 +48,14 @@ env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)
 model = PPO('MlpPolicy', env, verbose=2, tensorboard_log=logdir,
 	learning_rate = lr, n_steps=nstp, batch_size = bs)
 
-#model.learn(total_timesteps=TOTALTIMESTEPS, callback=kogenv.TensorboardCallback())
+model.learn(total_timesteps=TOTALTIMESTEPS, callback=kogenv.TensorboardCallback())
 model.learn(total_timesteps=TOTALTIMESTEPS)
 model.save(f"{models_dir}/model0")
 print("modeldone 0")
 
 
-#models_dir = "models/20220921_003524"
 startfrom = 0
+#models_dir = "models/20220921_003524"
 #Train loop
 for i in range(startfrom,200):
 	model = PPO.load(f"{models_dir}/model{i}", print_system_info=True)
@@ -66,14 +66,13 @@ for i in range(startfrom,200):
 	print("modeldone", i)
 
 #Load fromm here
-#i = 25
-#model = PPO.load(f"models/20220610_013518/model{i}", print_system_info=True)
+#model = PPO.load(f"models/20220924_042653/model{startfrom}", print_system_info=True)
 #model.set_env(env)
 #obs = env.reset()
-#for i in range(10000):
+#while True:
 #	action, _state = model.predict(obs)
 #	obs, reward, done, info = env.step(action)
-#	if done:
-#		break
+#	if done[0]:
+#		obs = env.reset()
 #obs = env.reset()
 #print("modeldone", i)
