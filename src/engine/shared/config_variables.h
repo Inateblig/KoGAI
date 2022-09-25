@@ -444,3 +444,17 @@ MACRO_CONFIG_INT(GfxRenderThreadCount, gfx_render_thread_count, 3, 0, 0, CFGFLAG
 MACRO_CONFIG_INT(GfxDriverIsBlocked, gfx_driver_is_blocked, 0, 0, 1, CFGFLAG_SAVE | CFGFLAG_CLIENT, "If 1, the current driver is in a blocked error state.")
 
 MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG_SAVE | CFGFLAG_CLIENT, "At which FPS the videorecorder should record demos.")
+
+/* for ai */
+/* rays */
+MACRO_CONFIG_COL(ClFreezeCollColor, cl_freeze_coll_hkln_color, 9306015, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the freeze collision line.")
+MACRO_CONFIG_COL(ClHookableCollColor, cl_hookable_coll_hkln_color, 1179449, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the hookable collision line.")
+MACRO_CONFIG_INT(ClFreezeLnCollSize, cl_freezeln_coll_size, 5, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Size of hook collision line")
+MACRO_CONFIG_INT(ClHookableLnCollSize, cl_hookableln_coll_size, 10, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Size of hook collision line")
+MACRO_CONFIG_INT(ClFreezeLnCollAlpha, cl_freezeln_coll_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of hook collision line (0 invisible, 100 fully visible)")
+MACRO_CONFIG_INT(ClHookableLnCollAlpha, cl_hookableln_coll_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of hook collision line (0 invisible, 100 fully visible)")
+/* areas */
+MACRO_CONFIG_COL(ClAreaColor, cl_area_color, 0, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the starting area.")
+MACRO_CONFIG_COL(ClPrevAreaColor, cl_prev_area_color, 16777087, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the starting area.")
+MACRO_CONFIG_INT(ClAreaSize, cl_area_size, 80, 1, 300, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the size of the area.")
+MACRO_CONFIG_INT(ClAreaAlpha, cl_area_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of the area (0 invisible, 100 fully visible).")

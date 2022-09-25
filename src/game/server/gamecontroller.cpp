@@ -53,13 +53,13 @@ void IGameController::DoActivityCheck()
 
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 	{
-#ifdef CONF_DEBUG
+//#ifdef CONF_DEBUG
 		if(g_Config.m_DbgDummies)
 		{
 			if(i >= MAX_CLIENTS - g_Config.m_DbgDummies)
 				break;
 		}
-#endif
+//#endif
 		if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS && Server()->GetAuthedState(i) == AUTHED_NO)
 		{
 			if(Server()->Tick() > GameServer()->m_apPlayers[i]->m_LastActionTick + g_Config.m_SvInactiveKickTime * Server()->TickSpeed() * 60)
@@ -98,6 +98,7 @@ void IGameController::DoActivityCheck()
 
 float IGameController::EvaluateSpawnPos(CSpawnEval *pEval, vec2 Pos, int DDTeam)
 {
+	return rand();
 	float Score = 0.0f;
 	CCharacter *pC = static_cast<CCharacter *>(GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_CHARACTER));
 	for(; pC; pC = (CCharacter *)pC->TypeNext())

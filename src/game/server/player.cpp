@@ -172,12 +172,12 @@ void CPlayer::Tick()
 	}
 
 	bool ClientIngame = Server()->ClientIngame(m_ClientID);
-#ifdef CONF_DEBUG
+//#ifdef CONF_DEBUG
 	if(g_Config.m_DbgDummies && m_ClientID >= MAX_CLIENTS - g_Config.m_DbgDummies)
 	{
 		ClientIngame = true;
 	}
-#endif
+//#endif
 	if(!ClientIngame)
 		return;
 
@@ -301,9 +301,9 @@ void CPlayer::PostTick()
 
 void CPlayer::PostPostTick()
 {
-#ifdef CONF_DEBUG
+//#ifdef CONF_DEBUG
 	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS - g_Config.m_DbgDummies)
-#endif
+//#endif
 		if(!Server()->ClientIngame(m_ClientID))
 			return;
 
@@ -313,9 +313,9 @@ void CPlayer::PostPostTick()
 
 void CPlayer::Snap(int SnappingClient)
 {
-#ifdef CONF_DEBUG
+//#ifdef CONF_DEBUG
 	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS - g_Config.m_DbgDummies)
-#endif
+//#endif
 		if(!Server()->ClientIngame(m_ClientID))
 			return;
 

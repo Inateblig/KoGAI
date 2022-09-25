@@ -26,10 +26,24 @@
 #include <game/generated/protocol7.h>
 #include <game/generated/protocolglue.h>
 
+/* for ai */
+#include <poll.h>
+#include <base/util.h>
+#include <base/cycbuf.h>
+#include <game/generated/protocol.h>
+#include <game/server/area.h>
+#include <engine/server/ai.h>
+#include <engine/server/fifo.h>
+#include <base/math.h>
+
 #include "entities/character.h"
 #include "gamemodes/DDRace.h"
 #include "player.h"
 #include "score.h"
+
+/* for ai */
+#define V2F "%d %d"
+#define V2A(V) (int)(V).x, (int)(V).y
 
 // Not thread-safe!
 class CClientChatLogger : public ILogger
@@ -825,6 +839,12 @@ void CGameContext::OnPreTickTeehistorian()
 
 void CGameContext::OnTick()
 {
+
+	/* for ai */
+	static int haveread = 2;
+	struct pollfd pfd;
+	char inp[1024], *s;
+
 	// check tuning
 	CheckPureTuning();
 
@@ -1099,7 +1119,7 @@ void CGameContext::OnTick()
 		m_SqlRandomMapResult = nullptr;
 	}
 
-#ifdef CONF_DEBUG
+//#ifdef CONF_DEBUG
 	if(g_Config.m_DbgDummies)
 	{
 		for(int i = 0; i < g_Config.m_DbgDummies; i++)
@@ -1107,9 +1127,113 @@ void CGameContext::OnTick()
 			CNetObj_PlayerInput Input = {0};
 			Input.m_Direction = (i & 1) ? -1 : 1;
 			m_apPlayers[MAX_CLIENTS - i - 1]->OnPredictedInput(&Input);
+			/* for ai */
+//			if (i == ai_CID) {
+//				int sk;
+//				pfd.fd = fileno(fifoin.f);
+//				pfd.events = POLLIN;
+//		//		ai_selfkill = 0;
+//			ckinput:
+//				switch (poll(&pfd, 1, 0)) {
+//				case 1:
+//					if (fgets(inp, sizeof inp, fifoin.f)) {
+//		//				printf("inp: %s\n", inp);
+//						if ((s = strchr(inp, '\n')))
+//							*s = 0;
+//						sscanf(inp, "%d %d %d %d %d %d",
+//							&ai_inp.m_Direction,
+//							&ai_inp.m_TargetX,
+//							&ai_inp.m_TargetY,
+//							&ai_inp.m_Jump,
+//							&ai_inp.m_Hook,
+//							&sk);
+//		//					&ai_isdone);
+//						ai_selfkill |= sk;
+//			//			printf("%d %d %d\n",
+//			//			ai_inp.m_Direction, ai_inp.m_TargetX, ai_inp.m_TargetY);
+//						ai_gaveinp = 1;
+//						haveread = 2;
+//		//				printf("haveread = 2\n");
+//						goto ckinput;
+//					}
+//					break;
+//				case 0:
+//					if (haveread < 2)
+//						haveread = 0;
+//					break;
+//				case -1:
+//					perrn("poll: %s", fifoin.fnm);
+//				}
+//				static struct {
+//					int freeze;
+//					int start;
+//					int finish;
+//					int selfkill;
+//					int area;
+//					int ckpnt;
+//				} rwd;
+//
+//				ai_curarea.d = ai_AREADIM;
+//				{
+//				int i;
+//				if ((i = ckareas(&ai_curarea, &ai_prevareas, m_Core.m_Pos)) < 0)
+//					rwd.area = i;
+//				else if (i > 0)
+//					rwd.area = 1;
+//				else
+//					rwd.area = 0;
+//				}
+//
+//				gettiledist(ai_htds, NELM(ai_htds), Collision(), m_Core.m_Pos, TILE_SOLID);
+//				gettiledist(ai_ftds, NELM(ai_ftds), Collision(), m_Core.m_Pos, TILE_FREEZE);
+//
+//				if (haveread) {
+//					rwd.freeze = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FREEZE)) ? 1 : 0;
+//					rwd.start = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_START)) ? 1 : 0;
+//					rwd.finish = (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, TILE_FINISH)) ? 1 : 0;
+//					rwd.selfkill = ai_selfkill ? 1 : 0;
+//					int ckpnt;
+//					rwd.ckpnt = 0;
+//					for (ckpnt = TILE_CHECKPOINT_FIRST; ckpnt < TILE_CHECKPOINT_LAST; ckpnt++) {
+//						if (ColSF(Collision(), m_PrevPos, m_Core.m_Pos, ckpnt)) {
+//							rwd.ckpnt = 1;
+//							break;
+//						}
+//					}
+//					vec2 hp = (m_Core.m_HookPos - m_Core.m_Pos);
+//					vec2 vel = (m_Core.m_Vel);
+//
+//					fprintf(fifoout.f, V2F " " V2F " %d %d" " %d %d %d %d %d",
+//						V2A(vel), V2A(hp),
+//						m_Core.m_HookState, ai_availjumps,
+//						rwd.freeze, rwd.start, rwd.finish, rwd.area, rwd.ckpnt);
+//					size_t idx;
+//					for (idx = 0; idx < NELM(ai_htds); idx++) {
+//						fprintf(fifoout.f, " %a", ai_htds[idx]);
+//					}
+//					for (idx = 0; idx < NELM(ai_ftds); idx++) {
+//						fprintf(fifoout.f, " %a", ai_ftds[idx]);
+//					}
+//					fprintf(fifoout.f, "\n");
+//					fflush(fifoout.f);
+//
+//		//			printf(V2F " " V2F " %d %d" " %d %d %d %d %d",
+//		//				V2A(vel), V2A(hp),
+//		//				m_Core.m_HookState, ai_availjumps,
+//		//				rwd.freeze, rwd.start, rwd.finish, rwd.area, rwd.ckpnt);
+//		//			for (idx = 0; idx < NELM(ai_htds); idx++) {
+//		//				printf(" %f", ai_htds[idx]);
+//		//			}
+//		//			for (idx = 0; idx < NELM(ai_ftds); idx++) {
+//		//				printf(" %f", ai_ftds[idx]);
+//		//			}
+//		//			printf("\n");
+//					haveread = 0;
+//				}
+//			}
 		}
 	}
-#endif
+//#endif
 
 	// Record player position at the end of the tick
 	if(m_TeeHistorianActive)
@@ -1506,13 +1630,14 @@ void CGameContext::OnClientConnected(int ClientID, void *pData)
 	m_apPlayers[ClientID] = new(ClientID) CPlayer(this, NextUniqueClientID, ClientID, StartTeam);
 	NextUniqueClientID += 1;
 
-#ifdef CONF_DEBUG
+//#ifdef CONF_DEBUG
 	if(g_Config.m_DbgDummies)
 	{
+		printf("if(ClientID >= MAX_CLIENTS - g_Config.m_DbgDummies)\n");
 		if(ClientID >= MAX_CLIENTS - g_Config.m_DbgDummies)
 			return;
 	}
-#endif
+//#endif
 
 	SendMotd(ClientID);
 	SendSettings(ClientID);
@@ -3175,6 +3300,30 @@ void CGameContext::ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *p
 	}
 }
 
+/* for ai dbg_dummies */
+void CGameContext::ConchainDbgDummies(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
+{
+    pfnCallback(pResult, pCallbackUserData);
+    if(pResult->NumArguments())
+    {
+        CGameContext *pSelf = (CGameContext *)pUserData;
+        if(g_Config.m_DbgDummies)
+        {
+            for(int i = 0; i < pSelf->dbg_dummy_count; i++)
+            {
+                pSelf->OnClientDrop(MAX_CLIENTS - i - 1, "");
+            }
+
+            for(int i = 0; i < g_Config.m_DbgDummies; i++)
+            {
+                pSelf->OnClientConnected(MAX_CLIENTS - i - 1, 0);
+            }
+
+            pSelf->dbg_dummy_count = g_Config.m_DbgDummies;
+        }
+    }
+}
+
 void CGameContext::OnConsoleInit()
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
@@ -3213,6 +3362,7 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("dump_antibot", "", CFGFLAG_SERVER, ConDumpAntibot, this, "Dumps the antibot status");
 
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
+	Console()->Chain("dbg_dummies", ConchainDbgDummies, this);
 
 #define CONSOLE_COMMAND(name, params, flags, callback, userdata, help) m_pConsole->Register(name, params, flags, callback, userdata, help);
 #include <game/ddracecommands.h>
@@ -3222,6 +3372,7 @@ void CGameContext::OnConsoleInit()
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)
 {
+	dbg_dummy_count = g_Config.m_DbgDummies;
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConfig = Kernel()->RequestInterface<IConfigManager>()->Values();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
@@ -3524,15 +3675,16 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	if(GIT_SHORTREV_HASH)
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "git-revision", GIT_SHORTREV_HASH);
 
-#ifdef CONF_DEBUG
+//#ifdef CONF_DEBUG
 	if(g_Config.m_DbgDummies)
 	{
 		for(int i = 0; i < g_Config.m_DbgDummies; i++)
 		{
+			printf("OnClientConnected(MAX_CLIENTS - i - 1, 0)\n");
 			OnClientConnected(MAX_CLIENTS - i - 1, 0);
 		}
 	}
-#endif
+//#endif
 }
 
 void CGameContext::DeleteTempfile()

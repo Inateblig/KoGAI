@@ -61,6 +61,9 @@ struct CScoreRandomMapResult;
 
 class CGameContext : public IGameServer
 {
+	/* for ai dbg_dummies */
+	int dbg_dummy_count;
+
 	IServer *m_pServer;
 	CConfig *m_pConfig;
 	IConsole *m_pConsole;
@@ -117,6 +120,7 @@ class CGameContext : public IGameServer
 	static void ConDrySave(IConsole::IResult *pResult, void *pUserData);
 	static void ConDumpAntibot(IConsole::IResult *pResult, void *pUserData);
 	static void ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void ConchainDbgDummies(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
 	void Construct(int Resetting);
 	void Destruct(int Resetting);
