@@ -1118,18 +1118,24 @@ void CGameContext::OnTick()
 		CCharacterCore core;
 		vec2 pos, hpos, vel;
 		int hs, j, sk;
-		int i, id;
+		int i;
 		char inpbuf[256];
 
 		for (i = 0; i < g_Config.m_DbgDummies; i++) {
-			ch = m_apPlayers[MAX_CLIENTS-1 - i]->GetCharacter();
-			core = ch->GetCore();
-			pos = core.m_Pos;
-			hpos = core.m_HookPos;
-			vel = core.m_Vel;
-			hs = core.m_HookState;
-			j = core.m_Jumps;
+			if (!(m_apPlayers[MAX_CLIENTS-1 - i]))
+				continue;
+			if (!(ch = m_apPlayers[MAX_CLIENTS-1 - i]->GetCharacter()))
+				continue;
 
+			struct pollfd pfd;
+			pfd.fd = fileno(infifos[i]);
+			pfd.events = POLLIN;
+			switch (poll(&pfd, 1, 0)) {
+			case -1:
+				ferrn("poll");
+			case 0:
+				continue;
+			}
 			if (!(fgets(inpbuf, sizeof inpbuf, infifos[i])))
 				ferrn("fgets");
 			sscanf(inpbuf, "%d %d %d %d %d %d",
@@ -1141,6 +1147,14 @@ void CGameContext::OnTick()
 				&sk);
 
 			ai_selfkill |= sk;
+
+			core = ch->GetCore();
+			pos = core.m_Pos;
+			hpos = core.m_HookPos;
+			vel = core.m_Vel;
+			hs = core.m_HookState;
+			j = core.m_Jumps;
+
 
 			static struct {
 				int freeze;
@@ -1161,9 +1175,8 @@ void CGameContext::OnTick()
 			rwd.start = (Collision()->ColSF(aprevpos[i], pos, TILE_START)) ? 1 : 0;
 			rwd.finish = (Collision()->ColSF(aprevpos[i], pos, TILE_FINISH)) ? 1 : 0;
 			rwd.selfkill = ai_selfkill ? 1 : 0;
-			int ckpnt;
 			rwd.ckpnt = 0;
-			for (ckpnt = TILE_TIME_CHECKPOINT_FIRST; ckpnt < TILE_TIME_CHECKPOINT_LAST; ckpnt++) {
+			for (int ckpnt = TILE_TIME_CHECKPOINT_FIRST; ckpnt < TILE_TIME_CHECKPOINT_LAST; ckpnt++) {
 				if (Collision()->ColSF(aprevpos[i], pos, ckpnt)) {
 					rwd.ckpnt = 1;
 					break;
@@ -1183,10 +1196,10 @@ void CGameContext::OnTick()
 				fprintf(outfifos[i], " %a", ai_ftds[idx]);
 			}
 			fprintf(outfifos[i], "\n");
-//			fflush(outfifos[i]);
+			fflush(outfifos[i]);
+			aprevpos[i] = pos;
+			m_apPlayers[MAX_CLIENTS-1 - i]->OnPredictedInput(&inp);
 		}
-		aprevpos[i] = pos;
-		m_apPlayers[MAX_CLIENTS-1 - i]->OnPredictedInput(&inp);
 	}
 //#endif
 
@@ -3263,10 +3276,9 @@ void CGameContext::ConchainDbgDummies(IConsole::IResult *pResult, void *pUserDat
 	pfnCallback(pResult, pCallbackUserData);
 	if (pResult->NumArguments() && g_Config.m_DbgDummies) {
 		for (i = 0; i < pSelf->dbg_dummy_count; i++)
-			pSelf->OnClientDrop(MAX_CLIENTS - i - 1, "");
-
+			pSelf->OnClientDrop(MAX_CLIENTS-1 - i, "");
 		for (i = 0; i < g_Config.m_DbgDummies; i++)
-			pSelf->OnClientConnected(MAX_CLIENTS - i - 1, 0);
+			pSelf->OnClientConnected(MAX_CLIENTS-1 - i, 0);
 
 		pSelf->dbg_dummy_count = g_Config.m_DbgDummies;
 	}
@@ -3320,18 +3332,18 @@ void CGameContext::OnConsoleInit()
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)
 {
-	printf("GameContext:OnInit\n");
-//	dbg_dummy_count = g_Config.m_DbgDummies;
-	int ai_gaveinp;
-	int ai_selfkill;
-	int ai_availjumps;
-	int ai_isdone;
-	int ai_CID;
-	float ai_htds[ai_NRAYS];
-	float ai_ftds[ai_NRAYS];
-	struct area ai_curarea;
-	struct cycbuf ai_prevareas;
+	static struct area prevareasbuf[ai_MAXPREVAREAS];
 
+	cbinit(&ai_prevareas, sizeof prevareasbuf[0], NELM(prevareasbuf), prevareasbuf);
+//	int ai_gaveinp;
+//	int ai_selfkill;
+//	int ai_availjumps;
+//	int ai_isdone;
+//	int ai_CID;
+//	float ai_htds[ai_NRAYS];
+//	float ai_ftds[ai_NRAYS];
+//	struct area ai_curarea;
+//	struct cycbuf ai_prevareas;
 
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConfig = Kernel()->RequestInterface<IConfigManager>()->Values();
@@ -3636,14 +3648,13 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "git-revision", GIT_SHORTREV_HASH);
 
 //#ifdef CONF_DEBUG
-	if(g_Config.m_DbgDummies)
-	{
-		for(int i = 0; i < g_Config.m_DbgDummies; i++)
-		{
-			OnClientConnected(MAX_CLIENTS - i - 1, 0);
-		}
+	printf("GameContext:OnInit\n");
+	if (g_Config.m_DbgDummies) {
+		for (int i = 0; i < g_Config.m_DbgDummies; i++)
+			OnClientConnected(MAX_CLIENTS-1 - i, 0);
 	}
 //#endif
+	dbg_dummy_count = g_Config.m_DbgDummies;
 }
 
 void CGameContext::DeleteTempfile()

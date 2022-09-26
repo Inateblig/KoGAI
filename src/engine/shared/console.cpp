@@ -1065,28 +1065,34 @@ void CConsole::ParseArguments(int NumArgs, const char **ppArguments)
 			i++;
 		} else if (!str_comp("-s", ppArguments[i]) || !str_comp("--silent", ppArguments[i]))
 			continue;
-		else if (!strcmp(ppArguments[i], "--")) {
+		else if (!strcmp(ppArguments[i], "-F")) {
 			i++;
-			break;
+			goto thislabel;
 		} else
 			ExecuteLine(ppArguments[i]);
 	}
+	printf("for loop done done done\n");
 	if (i >= NumArgs)
 		return;
+thislabel:
+	printf("thislable lsldfjk\n");
 	argc = NumArgs - i;
 	argv = &ppArguments[i];
 	if (argc < 2 || argc % 2)
 		ferrf("Not enough fifo filenames where given");
 	nenvs = MIN(argc / 2, (int)NELM(outfifos));
 
+	i = 0;
 	do {
+		printf("i:%d\n", i);
 		infifos[i] = openfifo(*argv++, "r");
 		outfifos[i] = openfifo(*argv++, "w");
 		setvbuf(infifos[i], 0, _IOLBF, 0); /* line-buffered */
 		setvbuf(outfifos[i], 0, _IOLBF, 0);
+		i++;
 	} while (*argv);
 
-//	g_Config.m_DbgDummies = nenvs;
+	g_Config.m_DbgDummies = nenvs;
 }
 
 void CConsole::AddCommandSorted(CCommand *pCommand)
