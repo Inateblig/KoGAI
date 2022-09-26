@@ -17,6 +17,11 @@
 #include <iterator> // std::size
 #include <new>
 
+#include <stdio.h>
+#include <base/util.h>
+
+#include "fifos.h"
+
 // todo: rework this
 
 const char *CConsole::CResult::GetString(unsigned Index)
@@ -1049,26 +1054,39 @@ void CConsole::Init()
 
 void CConsole::ParseArguments(int NumArgs, const char **ppArguments)
 {
-	for(int i = 0; i < NumArgs; i++)
-	{
+	int i, argc;
+	const char **argv;
+
+	for (i = 0; i < NumArgs; i++) {
 		// check for scripts to execute
-		if(ppArguments[i][0] == '-' && ppArguments[i][1] == 'f' && ppArguments[i][2] == 0)
-		{
+		if (!strcmp(ppArguments[i], "-f")) {
 			if(NumArgs - i > 1)
 				ExecuteFile(ppArguments[i + 1], -1, true, IStorage::TYPE_ABSOLUTE);
 			i++;
-		}
-		else if(!str_comp("-s", ppArguments[i]) || !str_comp("--silent", ppArguments[i]))
-		{
-			// skip silent param
+		} else if (!str_comp("-s", ppArguments[i]) || !str_comp("--silent", ppArguments[i]))
 			continue;
-		}
-		else
-		{
-			// search arguments for overrides
+		else if (!strcmp(ppArguments[i], "--")) {
+			i++;
+			break;
+		} else
 			ExecuteLine(ppArguments[i]);
-		}
 	}
+	if (i >= NumArgs)
+		return;
+	argc = NumArgs - i;
+	argv = &ppArguments[i];
+	if (argc < 2 || argc % 2)
+		ferrf("Not enough fifo filenames where given");
+	nenvs = MIN(argc / 2, (int)NELM(outfifos));
+
+	do {
+		infifos[i] = openfifo(*argv++, "r");
+		outfifos[i] = openfifo(*argv++, "w");
+		setvbuf(infifos[i], 0, _IOLBF, 0); /* line-buffered */
+		setvbuf(outfifos[i], 0, _IOLBF, 0);
+	} while (*argv);
+
+//	g_Config.m_DbgDummies = nenvs;
 }
 
 void CConsole::AddCommandSorted(CCommand *pCommand)

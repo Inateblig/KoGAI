@@ -22,6 +22,10 @@
 
 #include <vector>
 
+/* for ai */
+#include <base/util.h>
+#include <engine/shared/fifos.h>
+
 #if defined(CONF_FAMILY_WINDOWS)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -50,6 +54,7 @@ int main(int argc, const char **argv)
 	CCmdlineFix CmdlineFix(&argc, &argv);
 	bool Silent = false;
 
+	prognm = argv[0];
 	for(int i = 1; i < argc; i++)
 	{
 		if(str_comp("-s", argv[i]) == 0 || str_comp("--silent", argv[i]) == 0)

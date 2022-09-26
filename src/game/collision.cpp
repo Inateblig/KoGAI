@@ -320,6 +320,32 @@ int CCollision::IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *p
 	return 0;
 }
 
+int CCollision::IntersectLineAllTiles(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) const
+{
+	float Distance = distance(Pos0, Pos1);
+	int End(Distance + 1);
+	vec2 Pos, Last = Pos0;
+
+	for (int i = 0; i <= End; i++) {
+		Pos = mix(Pos0, Pos1, i / (float)End);
+
+		if (CheckPoint(Pos)) {
+			if (pOutCollision)
+				*pOutCollision = Pos;
+			if (pOutBeforeCollision)
+				*pOutBeforeCollision = Last;
+			return GetCollisionAt(Pos.x, Pos.y);
+		}
+
+		Last = Pos;
+	}
+	if (pOutCollision)
+		*pOutCollision = Pos1;
+	if (pOutBeforeCollision)
+		*pOutBeforeCollision = Pos1;
+	return 0;
+}
+
 int CCollision::IntersectLineTeleHook(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int *pTeleNr) const
 {
 	float Distance = distance(Pos0, Pos1);
@@ -1275,3 +1301,27 @@ int CCollision::IsFTimeCheckpoint(int Index) const
 		return z - TILE_TIME_CHECKPOINT_FIRST;
 	return -1;
 }
+
+bool CCollision::ColSF(vec2 Prev, vec2 Pos, int TILE)
+{
+//	CCollision *pCollision = pClient->Collision();
+	std::list<int> Indices = GetMapIndices(Prev, Pos);
+	if(!Indices.empty())
+	{
+		for(int &Indice : Indices)
+		{
+			if(GetTileIndex(Indice) == TILE)
+				return true;
+			if(GetFTileIndex(Indice) == TILE)
+				return true;
+		}
+	} else
+	{
+		if(GetTileIndex(GetPureMapIndex(Pos)) == TILE)
+			return true;
+		if(GetFTileIndex(GetPureMapIndex(Pos)) == TILE)
+			return true;
+	}
+	return false;
+}
+

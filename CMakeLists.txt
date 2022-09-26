@@ -1686,6 +1686,12 @@ add_custom_command(OUTPUT "src/game/generated/wordlist.h"
 
 # Sources
 set_src(BASE GLOB_RECURSE src/base
+  #for ai
+  cycbuf.cpp
+  cycbuf.h
+  util.h
+  do.h
+
   bezier.cpp
   bezier.h
   color.h
@@ -1744,6 +1750,10 @@ set_src(ENGINE_INTERFACE GLOB src/engine
   warning.h
 )
 set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
+  # for ai
+  fifos.cpp
+  fifos.h
+
   assertion_logger.cpp
   assertion_logger.h
   compression.cpp
@@ -2273,6 +2283,10 @@ if(SERVER)
   )
 
   set_src(ENGINE_SERVER GLOB_RECURSE src/engine/server
+    #for ai
+    ai.cpp
+    ai.h
+
     antibot.cpp
     antibot.h
     authmanager.cpp
@@ -2298,6 +2312,12 @@ if(SERVER)
     upnp.h
   )
   set_src(GAME_SERVER GLOB_RECURSE src/game/server
+    # for ai
+    ray.h
+    ray.cpp
+    area.h
+    area.cpp
+
     alloc.h
     ddracechat.cpp
     ddracecommands.cpp

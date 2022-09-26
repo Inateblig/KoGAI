@@ -3,7 +3,6 @@
 
 #define ai_AREADIM (g_Config.m_ClAreaSize)
 
-extern CNetObj_PlayerInput ai_inp;
 extern int ai_gaveinp;
 extern int ai_selfkill;
 extern int ai_availjumps;
