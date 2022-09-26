@@ -1,6 +1,6 @@
 #define ai_NRAYS 8
 #define ai_RAYLEN (32 * 16)
-#define ai_MAXPREVAREAS 32
+#define ai_MAXPREVAREAS 128
 
 #define ai_AREADIM (g_Config.m_ClAreaSize)
 

@@ -328,6 +328,10 @@ void CGameContext::CreatePlayerSpawn(vec2 Pos, int64_t Mask)
 	CNetEvent_Spawn *pEvent = (CNetEvent_Spawn *)m_Events.Create(NETEVENTTYPE_SPAWN, sizeof(CNetEvent_Spawn), Mask);
 	if(pEvent)
 	{
+
+		ai_curarea.c = Pos;
+		ai_prevareas.nea = 0;
+		printf("ai_curarea.c (%f, %f)\n", ai_curarea.c.x, ai_curarea.c.y);
 		pEvent->m_X = (int)Pos.x;
 		pEvent->m_Y = (int)Pos.y;
 	}
@@ -1114,6 +1118,7 @@ void CGameContext::OnTick()
 	if (g_Config.m_DbgDummies) { /* for ai */
 		static vec2 aprevpos[MAX_CLIENTS];
 		CNetObj_PlayerInput inp;
+		CPlayer *plr;
 		CCharacter *ch;
 		CCharacterCore core;
 		vec2 pos, hpos, vel;
@@ -1122,7 +1127,7 @@ void CGameContext::OnTick()
 		char inpbuf[256];
 
 		for (i = 0; i < g_Config.m_DbgDummies; i++) {
-			if (!(m_apPlayers[MAX_CLIENTS-1 - i]))
+			if (!(plr = m_apPlayers[MAX_CLIENTS-1 - i]))
 				continue;
 			if (!(ch = m_apPlayers[MAX_CLIENTS-1 - i]->GetCharacter()))
 				continue;
@@ -1146,8 +1151,6 @@ void CGameContext::OnTick()
 				&inp.m_Hook,
 				&sk);
 
-			ai_selfkill |= sk;
-
 			core = ch->GetCore();
 			pos = core.m_Pos;
 			hpos = core.m_HookPos;
@@ -1160,7 +1163,6 @@ void CGameContext::OnTick()
 				int freeze;
 				int start;
 				int finish;
-				int selfkill;
 				int area;
 				int ckpnt;
 			} rwd;
@@ -1174,7 +1176,6 @@ void CGameContext::OnTick()
 			rwd.freeze = (Collision()->ColSF(aprevpos[i], pos, TILE_FREEZE)) ? 1 : 0;
 			rwd.start = (Collision()->ColSF(aprevpos[i], pos, TILE_START)) ? 1 : 0;
 			rwd.finish = (Collision()->ColSF(aprevpos[i], pos, TILE_FINISH)) ? 1 : 0;
-			rwd.selfkill = ai_selfkill ? 1 : 0;
 			rwd.ckpnt = 0;
 			for (int ckpnt = TILE_TIME_CHECKPOINT_FIRST; ckpnt < TILE_TIME_CHECKPOINT_LAST; ckpnt++) {
 				if (Collision()->ColSF(aprevpos[i], pos, ckpnt)) {
@@ -1197,6 +1198,11 @@ void CGameContext::OnTick()
 			}
 			fprintf(outfifos[i], "\n");
 			fflush(outfifos[i]);
+
+			plr->m_LastKill = Server()->Tick();
+			plr->KillCharacter(WEAPON_SELF);
+			plr->Respawn();
+
 			aprevpos[i] = pos;
 			m_apPlayers[MAX_CLIENTS-1 - i]->OnPredictedInput(&inp);
 		}
@@ -3332,18 +3338,9 @@ void CGameContext::OnConsoleInit()
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)
 {
+	/* for ai */
 	static struct area prevareasbuf[ai_MAXPREVAREAS];
-
 	cbinit(&ai_prevareas, sizeof prevareasbuf[0], NELM(prevareasbuf), prevareasbuf);
-//	int ai_gaveinp;
-//	int ai_selfkill;
-//	int ai_availjumps;
-//	int ai_isdone;
-//	int ai_CID;
-//	float ai_htds[ai_NRAYS];
-//	float ai_ftds[ai_NRAYS];
-//	struct area ai_curarea;
-//	struct cycbuf ai_prevareas;
 
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConfig = Kernel()->RequestInterface<IConfigManager>()->Values();
