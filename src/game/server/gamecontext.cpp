@@ -857,6 +857,27 @@ void CGameContext::OnTick()
 		m_TeeHistorian.BeginPlayers();
 	}
 
+	int waitsreply[ai_nenvs];
+	for (int i = 0; i < ai_nenvs; i++) {
+		CPlayer *plr;
+		CCharacter *ch;
+		CNetObj_PlayerInput inp;
+		int id, sk;
+
+		id = MAX_CLIENTS-1 - i;
+		plr = m_apPlayers[id];
+		if (!(ch = plr->GetCharacter()))
+			continue;
+		if (!(waitsreply[i] = ai_getinp(i, &inp, &sk)))
+			continue;
+		if (sk) {
+			plr->m_LastKill = Server()->Tick();
+			plr->KillCharacter(WEAPON_SELF);
+			plr->Respawn();
+		} else
+			ch->OnPredictedInput(&inp);
+	}
+
 	// copy tuning
 	m_World.m_Core.m_aTuning[0] = m_Tuning;
 	m_World.Tick();
@@ -864,9 +885,10 @@ void CGameContext::OnTick()
 	//if(world.paused) // make sure that the game object always updates
 	m_pController->Tick();
 
-	CPlayer *plr;
 	for(int i = 0; i < MAX_CLIENTS; i++) {
-		if(!(plr = m_apPlayers[i]))
+		CPlayer *plr;
+
+		if (!(plr = m_apPlayers[i]))
 			continue;
 		// send vote options
 		ProgressVoteOptions(i);
@@ -876,14 +898,20 @@ void CGameContext::OnTick()
 	}
 
 	for (int i = 0; i < MAX_CLIENTS; i++) {
+		CPlayer *plr;
+
 		if (!(plr = m_apPlayers[i]))
 			continue;
 		plr->PostPostTick();
-		if (i >= MAX_CLIENTS - ai_nenvs) {
-			CCharacter *ch;
-			if ((ch = plr->GetCharacter()))
-				ai_reply(MAX_CLIENTS-1 - i, ch);
-		}
+	}
+
+	for (int i = 0; i < ai_nenvs; i++) {
+		CCharacter *ch;
+		int id;
+
+		id = MAX_CLIENTS-1 - i;
+		if ((ch = m_apPlayers[id]->GetCharacter()) && waitsreply[i])
+			ai_reply(i, ch);
 	}
 
 	// update voting

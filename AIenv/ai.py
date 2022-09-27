@@ -25,11 +25,10 @@ for i in range(0, len(fifofnms), 2):
 	wfnm, rfnm = fifofnms[i:i+2]
 	print(wfnm, rfnm)
 	glb.fifofs.append([open(wfnm, 'w'), open(rfnm, 'r')])
-#	time.sleep(1)
 
 stamp = glb.stamp
-models_dir = f"../models/{stamp}/"
-logdir = f"../logs/{stamp}/"
+models_dir = f"models/{stamp}/"
+logdir = f"logs/{stamp}/"
 
 if not os.path.exists(models_dir):
 	os.makedirs(models_dir)
@@ -38,10 +37,10 @@ if not os.path.exists(logdir):
 	os.makedirs(logdir)
 
 n_envs = len(glb.fifofs)
-iters = 10
-nstp = 2048
-lr = 0.0005
-bs = 2048
+iters = glb.iters
+nstp = glb.nstp
+lr = glb.lr
+bs = glb.bs
 TOTALTIMESTEPS = nstp * iters * n_envs
 
 env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)

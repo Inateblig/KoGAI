@@ -1,6 +1,6 @@
 #!/bin/sh
 
-n=25
+n=10
 fd=fifos
 dd=.
 aid=AIenv
@@ -8,7 +8,7 @@ aid=AIenv
 cd ..
 $dd/build/DDNet-Server -f $dd/autoexecKoG.cfg -F \
 	$(
-		for i in $(seq 1 $n)
+		for i in $(seq $n)
 		do
 			echo $fd/fin$i
 			echo $fd/fout$i
@@ -16,7 +16,7 @@ $dd/build/DDNet-Server -f $dd/autoexecKoG.cfg -F \
 	) & #>svlog &
 
 python3 $aid/ai.py $(
-	for i in $(seq 1 $n)
+	for i in $(seq $n)
 	do
 		echo $fd/fin$i
 		echo $fd/fout$i

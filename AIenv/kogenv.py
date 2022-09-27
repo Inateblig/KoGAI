@@ -41,6 +41,20 @@ def fifowrite(fout, dir, tx, ty, j, h, sk, pr):
 	if pr:
 		print(out, end='')
 
+def getobsinprwd(fin, retrwds):
+	inpstr = fin.readline().split()
+	inp = getinput(inpstr[0:6])
+	allrays = inpstr[11:]
+
+	obs = []
+	obs.extend([float.fromhex(x) for x in allrays])
+	obs.extend([inp.vel.x, inp.vel.y])
+	obs.extend([inp.hp.x, inp.hp.y])
+	obs.extend([inp.hs, inp.njum])
+
+	rwds = [int(i) for i in inpstr[6:11]] if retrwds else None
+	return obs, inp, rwds
+
 maxvel = 6000 / 32
 maxhooklen = 800 / 32
 firstobs = [0] * (glb.totalrays + 6)
@@ -90,10 +104,8 @@ class KoGEnv(gym.Env):
 		self.action_space = spaces.Box(alow, ahigh, dtype=np.float32)
 		self.observation_space = spaces.Box(olow, ohigh, dtype=np.float32)
 
-#		print("woho")
 		glb.lock.acquire()
 		self.i = glb.fifoi
-#		print(f"i: {glb.fifoi}")
 		self.fout = glb.fifofs[self.i][0]
 		self.fin = glb.fifofs[self.i][1]
 		glb.fifoi += 1
@@ -128,21 +140,9 @@ class KoGEnv(gym.Env):
 			if hook_dt < glb.minhooktime:
 				self.rwdhook += glb.shorthookw
 
-#		print(f"{self.i}: writting")
 		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
-#		print(f"{self.i} wrote")
 
-		inputs = self.fin.readline().split()
-		input = inputs[0:6]
-		inp = getinput(input)
-		rwds = [int(i) for i in inputs[6:11]]
-		allrays = inputs[11:]
-
-		obs = []
-		obs.extend([float.fromhex(x) for x in allrays])
-		obs.extend([inp.vel.x, inp.vel.y])
-		obs.extend([inp.hp.x, inp.hp.y])
-		obs.extend([inp.hs, inp.njum])
+		obs, inp, rwds = getobsinprwd(self.fin, True)
 
 		if rwds[0] == 1:
 			self.rwdfreeze += glb.freezew
@@ -185,36 +185,43 @@ class KoGEnv(gym.Env):
 		self.time_alive = time() - self.reset_time
 		if self.n % 100 == 0:
 			with self.file_writer.as_default():
-					tf.summary.scalar("info/time_alive", data=self.time_alive, step=self.n)
-					tf.summary.scalar("individual_rewards/time_alive", data=self.rwdtimealive, step=self.n)
-					tf.summary.scalar("individual_rewards/freeze", data=self.rwdfreeze, step=self.n)
-					tf.summary.scalar("individual_rewards/start", data=self.rwdstart, step=self.n)
-					tf.summary.scalar("individual_rewards/finish", data=self.rwdfinish, step=self.n)
-					tf.summary.scalar("individual_rewards/oldarea", data=self.rwdoldarea, step=self.n)
-					tf.summary.scalar("individual_rewards/newarea", data=self.rwdnewarea, step=self.n)
-					tf.summary.scalar("individual_rewards/curarea", data=self.rwdcurarea, step=self.n)
-					tf.summary.scalar("individual_rewards/speed", data=self.rwdspeed, step=self.n)
-					tf.summary.scalar("individual_rewards/jump", data=self.rwdjump, step=self.n)
-					tf.summary.scalar("individual_rewards/ckpnt", data=self.rwdckpnt, step=self.n)
-					tf.summary.scalar("individual_rewards/hook", data=self.rwdhook, step=self.n)
-					tf.summary.scalar("total_rewards/reward_sum", data=self.prevrwd, step=self.n)
-					tf.summary.scalar("total_rewards/reward", data=reward, step=self.n)
+				tf.summary.scalar("info/time_alive", data=self.time_alive, step=self.n)
+				tf.summary.scalar("individual_rewards/time_alive", data=self.rwdtimealive, step=self.n)
+				tf.summary.scalar("individual_rewards/freeze", data=self.rwdfreeze, step=self.n)
+				tf.summary.scalar("individual_rewards/start", data=self.rwdstart, step=self.n)
+				tf.summary.scalar("individual_rewards/finish", data=self.rwdfinish, step=self.n)
+				tf.summary.scalar("individual_rewards/oldarea", data=self.rwdoldarea, step=self.n)
+				tf.summary.scalar("individual_rewards/newarea", data=self.rwdnewarea, step=self.n)
+				tf.summary.scalar("individual_rewards/curarea", data=self.rwdcurarea, step=self.n)
+				tf.summary.scalar("individual_rewards/speed", data=self.rwdspeed, step=self.n)
+				tf.summary.scalar("individual_rewards/jump", data=self.rwdjump, step=self.n)
+				tf.summary.scalar("individual_rewards/ckpnt", data=self.rwdckpnt, step=self.n)
+				tf.summary.scalar("individual_rewards/hook", data=self.rwdhook, step=self.n)
+				tf.summary.scalar("total_rewards/reward_sum", data=self.prevrwd, step=self.n)
+				tf.summary.scalar("total_rewards/reward", data=reward, step=self.n)
+
+		if self.n % glb.nstp == 0:
+			fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
+			obs = getobsinprwd(self.fin, False)[0]
+			reward = 0 # ??
+
 		self.n += 1
 
 		done = self.isdone
 		glb.totalrwd = self.totalrwd
-		
+
 		return np.array(obs), reward, done, info
 
 	def reset(self):
+		fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
+		obs = getobsinprwd(self.fin, False)[0]
+
 		self.reset_time = time()
 		self.time_alive = 0
-		fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
-#		print("doing reset")
 		self.isdone = False
 		self.hasstarted = False
 		self.hasfinished = False
-#		return np.array(obs)  # reward, done, info can't be included
+
 		return np.array(firstobs)  # reward, done, info can't be included
 
 #	def close(self):

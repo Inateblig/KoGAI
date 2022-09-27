@@ -760,20 +760,6 @@ void CCharacter::PreTick()
 
 void CCharacter::Tick()
 {
-	CNetObj_PlayerInput inp;
-	int sk, cid;
-
-	cid = MAX_CLIENTS-1 - m_pPlayer->GetCID();
-	if (infifos[cid]) {
-		if (!ai_getinp(cid, &inp, &sk))
-			return;
-		if (sk && m_pPlayer->m_DieTick + Server()->TickSpeed() < Server()->Tick()) {
-			m_pPlayer->KillCharacter(WEAPON_SELF);
-			return;
-		}
-		OnPredictedInput(&inp);
-	}
-
 	if(g_Config.m_SvNoWeakHookAndBounce) {
 		if(m_Paused)
 			return;

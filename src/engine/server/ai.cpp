@@ -32,10 +32,13 @@ ai_getinp(int cid, CNetObj_PlayerInput *inp, int *sk)
 	pfd.fd = fileno(infifos[cid]);
 	pfd.events = POLLIN;
 ckinp:
-	if (poll(&pfd, 1, 0) <= 0)
+	switch (poll(&pfd, 1, 0)) {
+	case -1:
+		ferrn("poll");
+	case 0:
 		return haveread;
+	}
 
-//	printf("reading inp: id:%d\n", cid);
 	if (!(fgets(inpbuf, sizeof inpbuf, infifos[cid])))
 		ferrn("fgets");
 	sscanf(inpbuf, "%d %d %d %d %d %d",
@@ -48,7 +51,6 @@ ckinp:
 	*sk |= tsk;
 	haveread = 1;
 	goto ckinp;
-	return 1;
 }
 
 void
@@ -99,6 +101,4 @@ ai_reply(int cid, CCharacter *ch)
 	for (i = 0; i < NELM(ftds); i++)
 		fprintf(outfifos[cid], " %a", ftds[i]);
 	fprintf(outfifos[cid], "\n"); /* line-buffered */
-	fflush(outfifos[cid]);
-//	printf("replied: id:%d\n", cid);
 }
