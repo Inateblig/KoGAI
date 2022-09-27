@@ -4,6 +4,7 @@
 #define GAME_COLLISION_H
 
 #include <base/vmath.h>
+#include <base/util.h>
 #include <engine/shared/protocol.h>
 
 #include <list>
@@ -117,7 +118,9 @@ public:
 	class CLayers *Layers() { return m_pLayers; }
 	int m_HighestSwitchNumber;
 	
-	bool ColSF(vec2 Prev, vec2 Pos, int TILE);
+	int MovedThruFn(FPARS(vec2, prev, pos), int (*matches)(int t, void *), void *arg);
+	int MovedThruTile(FPARS(vec2, prev, pos), int tile);
+	int MovedThruRange(FPARS(vec2, prev, pos), FPARS(int, tfrom, tto));
 
 private:
 	class CTeleTile *m_pTele;

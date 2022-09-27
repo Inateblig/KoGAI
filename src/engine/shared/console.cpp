@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <base/util.h>
 
+#include <engine/server/ai.h>
 #include "fifos.h"
 
 // todo: rework this
@@ -1067,32 +1068,27 @@ void CConsole::ParseArguments(int NumArgs, const char **ppArguments)
 			continue;
 		else if (!strcmp(ppArguments[i], "-F")) {
 			i++;
-			goto thislabel;
+			goto getfifos;
 		} else
 			ExecuteLine(ppArguments[i]);
 	}
-	printf("for loop done done done\n");
-	if (i >= NumArgs)
-		return;
-thislabel:
-	printf("thislable lsldfjk\n");
+	return;
+getfifos:
 	argc = NumArgs - i;
 	argv = &ppArguments[i];
 	if (argc < 2 || argc % 2)
 		ferrf("Not enough fifo filenames where given");
-	nenvs = MIN(argc / 2, (int)NELM(outfifos));
+	if ((ai_nenvs = argc / 2) >= MAX_CLIENTS)
+		ferrf("Too many fifos given: %d (max: %d)", argc, MAX_CLIENTS/2);
 
 	i = 0;
 	do {
-		printf("i:%d\n", i);
 		infifos[i] = openfifo(*argv++, "r");
 		outfifos[i] = openfifo(*argv++, "w");
 		setvbuf(infifos[i], 0, _IOLBF, 0); /* line-buffered */
 		setvbuf(outfifos[i], 0, _IOLBF, 0);
 		i++;
 	} while (*argv);
-
-	g_Config.m_DbgDummies = nenvs;
 }
 
 void CConsole::AddCommandSorted(CCommand *pCommand)

@@ -1,6 +1,7 @@
 #include <math.h>
-#include <game/collision.h>
 #include <game/generated/protocol.h>
+#include <game/collision.h>
+#include <game/server/entities/character.h>
 #include <engine/server/ai.h>
 
 void

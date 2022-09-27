@@ -1,3 +1,5 @@
+#ifndef BASE_UTIL_H
+#define BASE_UTIL_H
 #define NELM(X) (sizeof (X) / sizeof (X)[0])
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
@@ -76,3 +78,4 @@ extern const char *prognm;
 	T A, T B, T C, T D, T E, T F, T G
 #define FPARS8(T, A, B, C, D, E, F, G, H)\
 	T A, T B, T C, T D, T E, T F, T G, T H
+#endif

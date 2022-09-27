@@ -10,6 +10,7 @@
 
 #include <engine/antibot.h>
 #include <engine/server.h>
+#include <engine/server/ai.h>
 #include <engine/shared/config.h>
 
 #include <game/gamecore.h>
@@ -171,14 +172,14 @@ void CPlayer::Tick()
 		m_ScoreFinishResult = nullptr;
 	}
 
-	bool ClientIngame = Server()->ClientIngame(m_ClientID);
+//	bool ClientIngame = Server()->ClientIngame(m_ClientID);
 //#ifdef CONF_DEBUG
-	if(g_Config.m_DbgDummies && m_ClientID >= MAX_CLIENTS - g_Config.m_DbgDummies)
-	{
-		ClientIngame = true;
-	}
+//	if(g_Config.m_DbgDummies && m_ClientID >= MAX_CLIENTS - g_Config.m_DbgDummies)
+//	{
+//		ClientIngame = true;
+//	}
 //#endif
-	if(!ClientIngame)
+	if (m_ClientID < MAX_CLIENTS - ai_nenvs && !Server()->ClientIngame(m_ClientID))
 		return;
 
 	if(m_ChatScore > 0)
@@ -301,9 +302,13 @@ void CPlayer::PostTick()
 
 void CPlayer::PostPostTick()
 {
+#if 0
 //#ifdef CONF_DEBUG
 	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS - g_Config.m_DbgDummies)
 //#endif
+#else
+	if (m_ClientID < MAX_CLIENTS - ai_nenvs)
+#endif
 		if(!Server()->ClientIngame(m_ClientID))
 			return;
 
@@ -313,9 +318,13 @@ void CPlayer::PostPostTick()
 
 void CPlayer::Snap(int SnappingClient)
 {
+#if 0 
 //#ifdef CONF_DEBUG
 	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS - g_Config.m_DbgDummies)
 //#endif
+#else
+	if (!ai_nenvs || m_ClientID < MAX_CLIENTS - ai_nenvs)
+#endif
 		if(!Server()->ClientIngame(m_ClientID))
 			return;
 

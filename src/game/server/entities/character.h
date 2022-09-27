@@ -3,8 +3,10 @@
 #ifndef GAME_SERVER_ENTITIES_CHARACTER_H
 #define GAME_SERVER_ENTITIES_CHARACTER_H
 
+#include <base/cycbuf.h>
 #include <game/server/entity.h>
 #include <game/server/save.h>
+#include <game/server/area.h>
 
 class CGameTeams;
 class CGameWorld;
@@ -162,7 +164,11 @@ private:
 
 	bool m_SetSavePos;
 	CSaveTee m_RescueTee;
-
+	/* for ai */
+	struct area prevareasbuf[32];
+public:
+	struct area curarea;
+	struct cycbuf prevareas;
 public:
 	CGameTeams *Teams() { return m_pTeams; }
 	void SetTeams(CGameTeams *pTeams);

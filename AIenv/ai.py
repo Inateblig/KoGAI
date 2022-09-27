@@ -25,7 +25,7 @@ for i in range(0, len(fifofnms), 2):
 	wfnm, rfnm = fifofnms[i:i+2]
 	print(wfnm, rfnm)
 	glb.fifofs.append([open(wfnm, 'w'), open(rfnm, 'r')])
-	time.sleep(1)
+#	time.sleep(1)
 
 stamp = glb.stamp
 models_dir = f"../models/{stamp}/"
@@ -39,7 +39,7 @@ if not os.path.exists(logdir):
 
 n_envs = len(glb.fifofs)
 iters = 10
-nstp = 16384
+nstp = 2048
 lr = 0.0005
 bs = 2048
 TOTALTIMESTEPS = nstp * iters * n_envs

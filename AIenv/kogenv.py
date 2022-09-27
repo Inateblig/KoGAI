@@ -128,7 +128,9 @@ class KoGEnv(gym.Env):
 			if hook_dt < glb.minhooktime:
 				self.rwdhook += glb.shorthookw
 
+#		print(f"{self.i}: writting")
 		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
+#		print(f"{self.i} wrote")
 
 		inputs = self.fin.readline().split()
 		input = inputs[0:6]

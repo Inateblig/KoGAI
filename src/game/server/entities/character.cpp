@@ -1,5 +1,6 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
 #include "character.h"
 #include "laser.h"
 #include "projectile.h"
@@ -18,6 +19,16 @@
 #include <game/server/player.h>
 #include <game/server/score.h>
 #include <game/server/teams.h>
+
+/* for ai */
+#include <base/util.h>
+#include <base/cycbuf.h>
+#include <game/generated/protocol.h>
+#include <game/server/area.h>
+#include <game/server/ray.h>
+#include <engine/server/ai.h>
+#include <engine/shared/fifos.h>
+#include <base/math.h>
 
 MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
 
@@ -42,6 +53,7 @@ CCharacter::CCharacter(CGameWorld *pWorld, CNetObj_PlayerInput LastInput) :
 	{
 		CurrentTimeCp = 0.0f;
 	}
+	cbinit(&prevareas, sizeof(struct area), NELM(prevareasbuf), prevareasbuf);
 }
 
 void CCharacter::Reset()
@@ -98,6 +110,11 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	GameServer()->SendTuningParams(m_pPlayer->GetCID(), m_TuneZone);
 
 	Server()->StartRecord(m_pPlayer->GetCID());
+
+	/* for ai */
+	curarea.c = Pos;
+	curarea.d = g_Config.m_ClAreaSize;
+	prevareas.nea = 0;
 
 	return true;
 }
@@ -743,39 +760,43 @@ void CCharacter::PreTick()
 
 void CCharacter::Tick()
 {
-	if(g_Config.m_SvNoWeakHookAndBounce)
-	{
+	CNetObj_PlayerInput inp;
+	int sk, cid;
+
+	cid = MAX_CLIENTS-1 - m_pPlayer->GetCID();
+	if (infifos[cid]) {
+		if (!ai_getinp(cid, &inp, &sk))
+			return;
+		if (sk && m_pPlayer->m_DieTick + Server()->TickSpeed() < Server()->Tick()) {
+			m_pPlayer->KillCharacter(WEAPON_SELF);
+			return;
+		}
+		OnPredictedInput(&inp);
+	}
+
+	if(g_Config.m_SvNoWeakHookAndBounce) {
 		if(m_Paused)
 			return;
 
 		m_Core.TickDeferred();
-	}
-	else
-	{
+	} else
 		PreTick();
-	}
 
 	if(!m_PrevInput.m_Hook && m_Input.m_Hook && !(m_Core.m_TriggeredEvents & COREEVENT_HOOK_ATTACH_PLAYER))
-	{
 		Antibot()->OnHookAttach(m_pPlayer->GetCID(), false);
-	}
 
 	// handle Weapons
 	HandleWeapons();
 
 	DDRacePostCoreTick();
 
-	if(m_Core.m_TriggeredEvents & COREEVENT_HOOK_ATTACH_PLAYER)
-	{
+	if(m_Core.m_TriggeredEvents & COREEVENT_HOOK_ATTACH_PLAYER) {
 		if(m_Core.m_HookedPlayer != -1 && GameServer()->m_apPlayers[m_Core.m_HookedPlayer]->GetTeam() != TEAM_SPECTATORS)
-		{
 			Antibot()->OnHookAttach(m_pPlayer->GetCID(), true);
-		}
 	}
 
 	// Previnput
 	m_PrevInput = m_Input;
-
 	m_PrevPos = m_Core.m_Pos;
 }
 

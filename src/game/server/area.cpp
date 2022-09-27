@@ -17,10 +17,6 @@ ckareas(struct area *cur, struct cycbuf *prev, vec2 p)
 	struct area *a;
 	size_t i;
 
-	#define ARF V2F " %d"
-	#define ARA(A) V2A((A).c), (A).d
-
-//	printf("p:" V2F " -- " ARF "\n", V2A(p), ARA(*cur));
 	if (areahaspos(cur, p))
 		return 0;
 

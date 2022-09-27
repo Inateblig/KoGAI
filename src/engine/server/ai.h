@@ -1,17 +1,15 @@
+#ifndef ENGINE_SERVER_AI
+#define ENGINE_SERVER_AI
+#include <game/generated/protocol.h>
+#include <game/server/entities/character.h>
+
 #define ai_NRAYS 8
 #define ai_RAYLEN (32 * 16)
-#define ai_MAXPREVAREAS 128
 
-#define ai_AREADIM (g_Config.m_ClAreaSize)
+//#define ai_AREADIM (g_Config.m_ClAreaSize)
 
-extern int ai_gaveinp;
-extern int ai_selfkill;
-extern int ai_availjumps;
-extern int ai_isdone;
-extern int ai_CID;
-extern float ai_htds[ai_NRAYS];
-extern float ai_ftds[ai_NRAYS];
+extern int ai_nenvs;
 
-extern struct area ai_curarea;
-extern struct cycbuf ai_prevareas;
-
+int ai_getinp(int cid, CNetObj_PlayerInput *inp, int *sk);
+void ai_reply(int cid, CCharacter *ch);
+#endif

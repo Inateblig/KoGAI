@@ -12,7 +12,6 @@
 const char *prognm;
 FILE *infifos[MAX_CLIENTS];
 FILE *outfifos[MAX_CLIENTS];
-int nenvs;
 
 FILE *
 openfifo(FPARS(const char, *fnm, *mode))
@@ -34,6 +33,5 @@ openfifo(FPARS(const char, *fnm, *mode))
 		ferrf("%s: not a fifo file", fnm);
 	if (!(f = fdopen(fd, mode)))
 		ferrn("fdopen: %s", fnm);
-	printf("%s gave %p\n", fnm, (void *)f);
 	return f;
 }

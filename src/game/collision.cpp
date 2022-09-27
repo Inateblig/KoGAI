@@ -3,6 +3,7 @@
 #include <base/math.h>
 #include <base/system.h>
 #include <base/vmath.h>
+#include <base/util.h>
 
 #include <antibot/antibot_data.h>
 
@@ -1302,26 +1303,51 @@ int CCollision::IsFTimeCheckpoint(int Index) const
 	return -1;
 }
 
-bool CCollision::ColSF(vec2 Prev, vec2 Pos, int TILE)
+int
+CCollision::MovedThruFn(FPARS(vec2, prev, pos), int (*matches)(int t, void *), void *arg)
 {
-//	CCollision *pCollision = pClient->Collision();
-	std::list<int> Indices = GetMapIndices(Prev, Pos);
-	if(!Indices.empty())
-	{
-		for(int &Indice : Indices)
-		{
-			if(GetTileIndex(Indice) == TILE)
+	std::list<int> inds = GetMapIndices(prev, pos);
+
+	if(!inds.empty()) {
+		for (int &ind : inds) {
+			if ((*matches)(GetTileIndex(ind), arg))
 				return true;
-			if(GetFTileIndex(Indice) == TILE)
+			if ((*matches)(GetFTileIndex(ind), arg))
 				return true;
 		}
-	} else
-	{
-		if(GetTileIndex(GetPureMapIndex(Pos)) == TILE)
+	} else {
+		if ((*matches)(GetTileIndex(GetPureMapIndex(pos)), arg))
 			return true;
-		if(GetFTileIndex(GetPureMapIndex(Pos)) == TILE)
+		if ((*matches)(GetFTileIndex(GetPureMapIndex(pos)), arg))
 			return true;
 	}
 	return false;
 }
 
+intern int
+istile(int t, void *arg)
+{
+	return t == *(int *)arg;
+}
+
+int
+CCollision::MovedThruTile(FPARS(vec2, prev, pos), int tile)
+{
+	return MovedThruFn(prev, pos, &istile, &tile);
+}
+
+intern int
+isinrange(int t, void *arg)
+{
+	int *tiles = (int *)arg;
+
+	return t >= tiles[0] && t <= tiles[1];
+}
+
+int
+CCollision::MovedThruRange(FPARS(vec2, prev, pos), FPARS(int, tfrom, tto))
+{
+	int tiles[2] = { tfrom, tto };
+
+	return MovedThruFn(prev, pos, &isinrange, tiles);
+}
