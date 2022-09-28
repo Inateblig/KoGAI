@@ -858,6 +858,7 @@ void CGameContext::OnTick()
 	}
 
 	static int wantskill[MAX_CLIENTS];
+	static int waitsreply[MAX_CLIENTS];
 	for (int i = 0; i < ai_nenvs; i++) {
 		CPlayer *plr;
 		CCharacter *ch;
@@ -866,10 +867,9 @@ void CGameContext::OnTick()
 
 		id = MAX_CLIENTS-1 - i;
 		plr = m_apPlayers[id];
-		if (!(ch = plr->GetCharacter()))
+		if (!(ch = plr->GetCharacter()) || !(ai_getinp(i, &inp, &sk, Server()->Tick())))
 			continue;
-		if (!(ai_getinp(i, &inp, &sk)))
-			continue;
+		waitsreply[i] = 1;
 		wantskill[i] |= sk;
 		if (!wantskill[i]) {
 			ch->OnPredictedInput(&inp);
@@ -916,8 +916,10 @@ void CGameContext::OnTick()
 		int id;
 
 		id = MAX_CLIENTS-1 - i;
-		if ((ch = m_apPlayers[id]->GetCharacter()))
-			ai_reply(i, ch);
+		if (waitsreply[i] && (ch = m_apPlayers[id]->GetCharacter())) {
+			ai_reply(i, ch, Server()->Tick());
+			waitsreply[i] = 0;
+		}
 	}
 
 	// update voting

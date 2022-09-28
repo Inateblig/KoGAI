@@ -10,6 +10,6 @@
 
 extern int ai_nenvs;
 
-int ai_getinp(int cid, CNetObj_PlayerInput *inp, int *sk);
-void ai_reply(int cid, CCharacter *ch);
+int ai_getinp(int cid, CNetObj_PlayerInput *inp, int *sk, int tick);
+void ai_reply(int cid, CCharacter *ch, int tick);
 #endif

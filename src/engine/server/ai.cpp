@@ -22,7 +22,7 @@
 int ai_nenvs;
 
 int
-ai_getinp(int cid, CNetObj_PlayerInput *inp, int *sk)
+ai_getinp(int cid, CNetObj_PlayerInput *inp, int *sk, int tick)
 {
 	struct pollfd pfd;
 	int haveread, tsk;
@@ -39,6 +39,7 @@ ckinp:
 		return haveread;
 	}
 
+	printf("tick:%d getting inp from %d\n", tick, cid);
 	if (!(fgets(inpbuf, sizeof inpbuf, infifos[cid])))
 		ferrn("fgets");
 	sscanf(inpbuf, "%d %d %d %d %d %d",
@@ -54,7 +55,7 @@ ckinp:
 }
 
 void
-ai_reply(int cid, CCharacter *ch)
+ai_reply(int cid, CCharacter *ch, int tick)
 {
 	CCharacterCore core;
 	CCollision *cln;
@@ -98,6 +99,7 @@ ai_reply(int cid, CCharacter *ch)
 	gettiledist(htds, NELM(htds), cln, pos, TILE_SOLID);
 	gettiledist(ftds, NELM(ftds), cln, pos, TILE_FREEZE);
 
+	printf("tick:%d, replying to %d\n", tick, cid);
 	fprintf(outfifos[cid], V2F " " V2F " %d %d %d",
 		V2A(vel), V2A(hp), hs, j, arearwd);
 	for (i = 0; i < NELM(rwdtiles); i++)

@@ -26,8 +26,8 @@ nrays = 8
 totalrays = nrays * 2
 
 iters = 10
-nstp = 2048 * 2
-bs = 2048 * 2
+nstp = 2048 * 8
+bs = 2048 * 8
 lr = 0.0005
 
 logdir = f"logs/{stamp}/log_ai_rewards"

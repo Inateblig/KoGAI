@@ -140,9 +140,11 @@ class KoGEnv(gym.Env):
 			if hook_dt < glb.minhooktime:
 				self.rwdhook += glb.shorthookw
 
+		print(f"{self.n}: {self.i}: writing(1)...")
 		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
-
+		print(f"{self.n} r{self.i}: eading(1)...")
 		obs, inp, rwds = getobsinprwd(self.fin, True)
+		print(f"{self.n}: {self.i} done")
 
 		if rwds[0] < 0:
 			self.rwdoldarea += glb.oldareaw * (rwds[3] - 1)
@@ -202,8 +204,11 @@ class KoGEnv(gym.Env):
 
 		print(f"{self.n:6}\r", end = '')
 		if self.n % glb.nstp == 0 and self.n != 0:
+			print(f"{self.n}: {self.i}: writing(2)...")
 			fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
+			print(f"{self.n}: {self.i}: reading(2)...")
 			obs = getobsinprwd(self.fin, False)[0]
+			print(f"{self.n}: {self.i}: done")
 			reward = 0
 
 		self.n += 1
@@ -214,8 +219,11 @@ class KoGEnv(gym.Env):
 		return np.array(obs), reward, done, info
 
 	def reset(self):
+		print(f"{self.n}: {self.i}: writing(3)...")
 		fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
+		print(f"{self.n}: {self.i}: reading(3)...")
 		obs = getobsinprwd(self.fin, False)[0]
+		print(f"{self.n}: {self.i}: done")
 
 		self.reset_time = time()
 		self.time_alive = 0

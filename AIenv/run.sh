@@ -1,6 +1,6 @@
 #!/bin/sh
 
-n=60
+n=6
 fd=fifos
 dd=.
 aid=AIenv

@@ -46,6 +46,7 @@ TOTALTIMESTEPS = nstp * iters * n_envs
 env = make_vec_env(kogenv.KoGEnv, n_envs=n_envs)
 model = PPO('MlpPolicy', env, verbose=2, tensorboard_log=logdir,
 	learning_rate = lr, n_steps=nstp, batch_size = bs)
+print(model.policy)
 
 model.learn(total_timesteps=TOTALTIMESTEPS)
 model.save(f"{models_dir}/model0")
