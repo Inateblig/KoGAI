@@ -105,6 +105,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	curarea.c = Pos;
 	curarea.d = g_Config.m_ClAreaSize;
 	prevareas.nea = 0;
+	memset(gotrwd, 0, sizeof gotrwd);
 
 	return true;
 }

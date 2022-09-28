@@ -169,6 +169,7 @@ private:
 public:
 	struct area curarea;
 	struct cycbuf prevareas;
+	bool gotrwd[256]; /* one for each tile */
 public:
 	CGameTeams *Teams() { return m_pTeams; }
 	void SetTeams(CGameTeams *pTeams);

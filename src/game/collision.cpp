@@ -1307,21 +1307,22 @@ int
 CCollision::MovedThruFn(FPARS(vec2, prev, pos), int (*matches)(int t, void *), void *arg)
 {
 	std::list<int> inds = GetMapIndices(prev, pos);
+	int t;
 
-	if(!inds.empty()) {
+	if (!inds.empty()) {
 		for (int &ind : inds) {
-			if ((*matches)(GetTileIndex(ind), arg))
-				return true;
-			if ((*matches)(GetFTileIndex(ind), arg))
-				return true;
+			if ((*matches)(t = GetTileIndex(ind), arg))
+				return t;
+			if ((*matches)(t = GetFTileIndex(ind), arg))
+				return t;
 		}
 	} else {
-		if ((*matches)(GetTileIndex(GetPureMapIndex(pos)), arg))
-			return true;
-		if ((*matches)(GetFTileIndex(GetPureMapIndex(pos)), arg))
-			return true;
+		if ((*matches)(t = GetTileIndex(GetPureMapIndex(pos)), arg))
+			return t;
+		if ((*matches)(t = GetFTileIndex(GetPureMapIndex(pos)), arg))
+			return t;
 	}
-	return false;
+	return -1;
 }
 
 intern int

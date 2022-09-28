@@ -144,24 +144,27 @@ class KoGEnv(gym.Env):
 
 		obs, inp, rwds = getobsinprwd(self.fin, True)
 
-		if rwds[0] == 1:
+		if rwds[0] < 0:
+			self.rwdoldarea += glb.oldareaw * (rwds[3] - 1)
+		elif rwds[0] > 0:
+			self.rwdnewarea += glb.newareaw
+		else:
+			self.rwdcurarea += glb.curareaw
+
+		if rwds[1] == 1:
 			self.rwdfreeze += glb.freezew
 #			print("donefreeze")
 			self.isdone = True
-		if rwds[1] == 1 and self.hasstarted == False:
+		if rwds[2] == 1 and self.hasstarted == False:
 			self.rwdstart += glb.startw
 			self.hasstarted = True
-		if rwds[2] == 1 and self.hasfinished == False:
+		if rwds[3] == 1 and self.hasfinished == False:
 			self.rwdfinish += glb.finishw
 			self.hasfinished = True
 #			print("finish", rwdfinish, "self.i", self.i)
 			self.isdone = True
-		if rwds[3] < 0:
-			self.rwdoldarea += glb.oldareaw * (rwds[3] - 1)
-		elif rwds[3] > 0:
-			self.rwdnewarea += glb.newareaw
-		else:
-			self.rwdcurarea += glb.curareaw
+		if rwds[4] == 1:
+			self.rwdckpnt += glb.ckpntw
 
 		if (abs(math.sqrt(inp.vel.x**2 + inp.vel.y**2))) >= self.spdthres:
 			self.rwdspeed += glb.speedw
@@ -169,9 +172,6 @@ class KoGEnv(gym.Env):
 			self.rwdspeed += -glb.speedw * 0.5
 		if jump > 0:
 			self.rwdjump += glb.jumpw
-
-		if rwds[4] == 1:
-			self.rwdckpnt += glb.ckpntw
 
 		if self.time_alive > glb.mintimealive:
 			self.rwdtimealive += glb.timealivew #* max(1, self.time_alive)
@@ -183,7 +183,7 @@ class KoGEnv(gym.Env):
 		self.prevrwd = self.totalrwd
 
 		self.time_alive = time() - self.reset_time
-		if self.n % 100 == 0:
+		if self.n % 500 == 0:
 			with self.file_writer.as_default():
 				tf.summary.scalar("info/time_alive", data=self.time_alive, step=self.n)
 				tf.summary.scalar("individual_rewards/time_alive", data=self.rwdtimealive, step=self.n)
@@ -204,7 +204,7 @@ class KoGEnv(gym.Env):
 		if self.n % glb.nstp == 0 and self.n != 0:
 			fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
 			obs = getobsinprwd(self.fin, False)[0]
-			reward = 0 # ??
+			reward = 0
 
 		self.n += 1
 

@@ -60,7 +60,7 @@ ai_reply(int cid, CCharacter *ch)
 	CCollision *cln;
 	vec2 ppos, pos, hp, vel;
 	size_t i;
-	int hs, j;
+	int hs, j, arearwd;
 
 	core = ch->GetCore();
 	cln = core.Collision();
@@ -71,31 +71,37 @@ ai_reply(int cid, CCharacter *ch)
 	hs = core.m_HookState;
 	j = core.m_Jumps & 3;
 
-	static struct {
-		int area;
-		int freeze;
-		int start;
-		int finish;
-		int ckpnt;
-	} rwd;
+	arearwd = ckareas(&ch->curarea, &ch->prevareas, pos);
 
-	rwd.area = ckareas(&ch->curarea, &ch->prevareas, pos);
-
-	rwd.freeze = cln->MovedThruTile(ppos, pos, TILE_FREEZE);
-	rwd.start = cln->MovedThruTile(ppos, pos, TILE_START);
-	rwd.finish = cln->MovedThruTile(ppos, pos, TILE_FINISH);
-	rwd.ckpnt = cln->MovedThruRange(ppos, pos, TILE_TIME_CHECKPOINT_FIRST,
-		TILE_TIME_CHECKPOINT_LAST);
+	struct rwdtile {
+		int tf, tl; /* tile first, tile last */
+		int rwd;
+	} rwdtiles[] = {
+		{ TILE_FREEZE },
+		{ TILE_START },
+		{ TILE_FINISH },
+		{ TILE_TIME_CHECKPOINT_FIRST, TILE_TIME_CHECKPOINT_LAST },
+	};
+	for (i = 0; i < NELM(rwdtiles); i++) {
+		struct rwdtile *rt;
+		int t;
+		rt = &rwdtiles[i];
+		/* zogtib big-brain magic 🪄 */
+		if ((!rt->tl && !ch->gotrwd[t = rt->tf] && cln->MovedThruTile(ppos, pos, t) >= 0) ||
+		(rt->tl && (t = cln->MovedThruRange(ppos, pos, rt->tf, rt->tl)) >= 0 && !ch->gotrwd[t])) {
+			rt->rwd = 1;
+			ch->gotrwd[t] = 1;
+		}
+	}
 
 	float htds[ai_NRAYS], ftds[ai_NRAYS]; /* hookable/freeze tiles distatnce-s */
 	gettiledist(htds, NELM(htds), cln, pos, TILE_SOLID);
 	gettiledist(ftds, NELM(ftds), cln, pos, TILE_FREEZE);
 
-	fprintf(outfifos[cid], V2F " " V2F " %d %d" " %d %d %d %d %d",
-		V2A(vel), V2A(hp),
-		hs, j,
-		rwd.freeze, rwd.start, rwd.finish, rwd.area, rwd.ckpnt);
-
+	fprintf(outfifos[cid], V2F " " V2F " %d %d %d",
+		V2A(vel), V2A(hp), hs, j, arearwd);
+	for (i = 0; i < NELM(rwdtiles); i++)
+		fprintf(outfifos[cid], " %d", rwdtiles[i].rwd);
 	for (i = 0; i < NELM(htds); i++)
 		fprintf(outfifos[cid], " %a", htds[i]);
 	for (i = 0; i < NELM(ftds); i++)
