@@ -857,7 +857,7 @@ void CGameContext::OnTick()
 		m_TeeHistorian.BeginPlayers();
 	}
 
-	int waitsreply[ai_nenvs];
+	static int wantskill[MAX_CLIENTS];
 	for (int i = 0; i < ai_nenvs; i++) {
 		CPlayer *plr;
 		CCharacter *ch;
@@ -868,14 +868,20 @@ void CGameContext::OnTick()
 		plr = m_apPlayers[id];
 		if (!(ch = plr->GetCharacter()))
 			continue;
-		if (!(waitsreply[i] = ai_getinp(i, &inp, &sk)))
+		if (!(ai_getinp(i, &inp, &sk)))
 			continue;
-		if (sk) {
+		wantskill[i] |= sk;
+		if (!wantskill[i]) {
+			ch->OnPredictedInput(&inp);
+			continue;
+		}
+		if (!plr->m_LastKill ||
+		plr->m_LastKill + Server()->TickSpeed() * g_Config.m_SvKillDelay < Server()->Tick()) {
 			plr->m_LastKill = Server()->Tick();
 			plr->KillCharacter(WEAPON_SELF);
 			plr->Respawn();
-		} else
-			ch->OnPredictedInput(&inp);
+			wantskill[i] = 0;
+		}
 	}
 
 	// copy tuning
@@ -910,7 +916,7 @@ void CGameContext::OnTick()
 		int id;
 
 		id = MAX_CLIENTS-1 - i;
-		if ((ch = m_apPlayers[id]->GetCharacter()) && waitsreply[i])
+		if ((ch = m_apPlayers[id]->GetCharacter()))
 			ai_reply(i, ch);
 	}
 

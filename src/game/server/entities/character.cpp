@@ -20,16 +20,6 @@
 #include <game/server/score.h>
 #include <game/server/teams.h>
 
-/* for ai */
-#include <base/util.h>
-#include <base/cycbuf.h>
-#include <game/generated/protocol.h>
-#include <game/server/area.h>
-#include <game/server/ray.h>
-#include <engine/server/ai.h>
-#include <engine/shared/fifos.h>
-#include <base/math.h>
-
 MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
 
 // Character, "physical" player's part

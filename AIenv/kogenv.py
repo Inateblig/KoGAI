@@ -200,7 +200,8 @@ class KoGEnv(gym.Env):
 				tf.summary.scalar("total_rewards/reward_sum", data=self.prevrwd, step=self.n)
 				tf.summary.scalar("total_rewards/reward", data=reward, step=self.n)
 
-		if self.n % glb.nstp == 0:
+		print(f"{self.n:6}\r", end = '')
+		if self.n % glb.nstp == 0 and self.n != 0:
 			fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
 			obs = getobsinprwd(self.fin, False)[0]
 			reward = 0 # ??
