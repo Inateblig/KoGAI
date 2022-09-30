@@ -454,7 +454,7 @@ MACRO_CONFIG_INT(ClHookableLnCollSize, cl_hookableln_coll_size, 10, 1, 30, CFGFL
 MACRO_CONFIG_INT(ClFreezeLnCollAlpha, cl_freezeln_coll_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of hook collision line (0 invisible, 100 fully visible)")
 MACRO_CONFIG_INT(ClHookableLnCollAlpha, cl_hookableln_coll_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of hook collision line (0 invisible, 100 fully visible)")
 /* areas */
-MACRO_CONFIG_COL(ClAreaColor, cl_area_color, 0, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the starting area.")
-MACRO_CONFIG_COL(ClPrevAreaColor, cl_prev_area_color, 16777087, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of the starting area.")
-MACRO_CONFIG_INT(ClAreaSize, cl_area_size, 80, 1, 300, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the size of the area.")
-MACRO_CONFIG_INT(ClAreaAlpha, cl_area_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of the area (0 invisible, 100 fully visible).")
+MACRO_CONFIG_COL(ClAreaColor, cl_area_color, 0, CFGFLAG_SERVER, "Specifies the color of the starting area.")
+MACRO_CONFIG_COL(ClPrevAreaColor, cl_prev_area_color, 16777087, CFGFLAG_SERVER, "Specifies the color of the starting area.")
+MACRO_CONFIG_INT(ClAreaSize, cl_area_size, 12, 1, 300, CFGFLAG_SERVER, "Specifies the size of the area.")
+MACRO_CONFIG_INT(ClAreaAlpha, cl_area_alpha, 50, 0, 100, CFGFLAG_SERVER, "Alpha of the area (0 invisible, 100 fully visible).")

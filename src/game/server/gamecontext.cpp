@@ -857,8 +857,8 @@ void CGameContext::OnTick()
 		m_TeeHistorian.BeginPlayers();
 	}
 
-	static int wantskill[MAX_CLIENTS];
 	static int waitsreply[MAX_CLIENTS];
+	static int wantskill[MAX_CLIENTS];
 	for (int i = 0; i < ai_nenvs; i++) {
 		CPlayer *plr;
 		CCharacter *ch;
@@ -870,8 +870,7 @@ void CGameContext::OnTick()
 		if (!(ch = plr->GetCharacter()) || !(ai_getinp(i, &inp, &sk, Server()->Tick())))
 			continue;
 		waitsreply[i] = 1;
-		wantskill[i] |= sk;
-		if (!wantskill[i]) {
+		if (!(wantskill[i] |= sk)) {
 			ch->OnPredictedInput(&inp);
 			continue;
 		}
@@ -891,31 +890,21 @@ void CGameContext::OnTick()
 	//if(world.paused) // make sure that the game object always updates
 	m_pController->Tick();
 
-	for(int i = 0; i < MAX_CLIENTS; i++) {
-		CPlayer *plr;
-
-		if (!(plr = m_apPlayers[i]))
-			continue;
-		// send vote options
-		ProgressVoteOptions(i);
-
-		plr->Tick();
-		plr->PostTick();
-	}
-
-	for (int i = 0; i < MAX_CLIENTS; i++) {
-		CPlayer *plr;
-
-		if (!(plr = m_apPlayers[i]))
-			continue;
-		plr->PostPostTick();
-	}
+	CPlayer *plr;
+	for (int i = 0; i < MAX_CLIENTS; i++)
+		if ((plr = m_apPlayers[i])) {
+			// send vote options
+			ProgressVoteOptions(i);
+			plr->Tick();
+			plr->PostTick();
+		}
+	for (int i = 0; i < MAX_CLIENTS; i++)
+		if ((plr = m_apPlayers[i]))
+			plr->PostPostTick();
 
 	for (int i = 0; i < ai_nenvs; i++) {
 		CCharacter *ch;
-		int id;
-
-		id = MAX_CLIENTS-1 - i;
+		int id = MAX_CLIENTS-1 - i;
 		if (waitsreply[i] && (ch = m_apPlayers[id]->GetCharacter())) {
 			ai_reply(i, ch, Server()->Tick());
 			waitsreply[i] = 0;

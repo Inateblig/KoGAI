@@ -42,6 +42,9 @@
 #include "databases/connection_pool.h"
 #include "register.h"
 
+/* for ai */
+#include "ai.h"
+
 extern bool IsInterrupted();
 
 CSnapIDPool::CSnapIDPool()
@@ -624,6 +627,11 @@ void CServer::GetClientAddr(int ClientID, char *pAddrStr, int Size) const
 
 const char *CServer::ClientName(int ClientID) const
 {
+	static char name[128];
+	if (ClientID >= MAX_CLIENTS - ai_nenvs) {
+		snprintf(name, sizeof name, "(%d) osne", MAX_CLIENTS - ClientID);
+		return name;
+	}
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
 		return "(invalid)";
 	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
@@ -634,6 +642,8 @@ const char *CServer::ClientName(int ClientID) const
 
 const char *CServer::ClientClan(int ClientID) const
 {
+	if (ClientID >= MAX_CLIENTS - ai_nenvs)
+		return "AI -- Tonz";
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
 		return "";
 	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)

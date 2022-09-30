@@ -20,6 +20,9 @@
 #include <game/server/score.h>
 #include <game/server/teams.h>
 
+/* for ai */
+#include <engine/server/ai.h>
+
 MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
 
 // Character, "physical" player's part
@@ -751,6 +754,22 @@ void CCharacter::PreTick()
 
 void CCharacter::Tick()
 {
+//	static bool waitsreply[MAX_CLIENTS];
+//	CNetObj_PlayerInput inp;
+//	int id, sk;
+//
+//	if ((id = MAX_CLIENTS-1 - m_pPlayer->GetCID()) < ai_nenvs) {
+//		if (ai_getinp(id, &inp, &sk, Server()->Tick())) {
+//			waitsreply[id] = 1;
+//			if (sk && m_pPlayer->m_LastKill + Server()->TickSpeed() *
+//			g_Config.m_SvKillDelay < Server()->Tick()) {
+//				m_pPlayer->m_LastKill = Server()->Tick();
+//				m_pPlayer->KillCharacter(WEAPON_SELF);
+//				return;
+//			}
+//			OnPredictedInput(&inp);
+//		}
+//	}
 	if(g_Config.m_SvNoWeakHookAndBounce) {
 		if(m_Paused)
 			return;
@@ -771,6 +790,11 @@ void CCharacter::Tick()
 		if(m_Core.m_HookedPlayer != -1 && GameServer()->m_apPlayers[m_Core.m_HookedPlayer]->GetTeam() != TEAM_SPECTATORS)
 			Antibot()->OnHookAttach(m_pPlayer->GetCID(), true);
 	}
+
+//	if (id < ai_nenvs && waitsreply[id]) {
+//		ai_reply(id, this, Server()->Tick());
+//		waitsreply[id] = 0;
+//	}
 
 	// Previnput
 	m_PrevInput = m_Input;

@@ -74,45 +74,43 @@ ohigh = np.array([1] * glb.totalrays + \
 	])
 
 class KoGEnv(gym.Env):
-	fin = 0
-	fout = 0
-	hasstarted = False
-	hasfinished = False
-	spdthres = 13
-	isdone = False
-	rwdspeed = 0
-	rwdfreeze = 0
-	rwdstart = 0
-	rwdfinish = 0
-	rwdoldarea = 0
-	rwdnewarea = 0
-	rwdcurarea = 0
-	rwdjump = 0
-	rwdckpnt = 0
-	rwdhook = 0
-	rwdtimealive = 0
-	totalrwd = 0
-	prevrwd = 0
-	hook_time = 0
-	hookstarted = False
-	time_alive = 0
-	reset_time = 0
-	n = 0
-	i = 0
-	def __init__(self):
+	def __init__(self, id, fifofnms):
 		super(KoGEnv, self).__init__()
 		self.action_space = spaces.Box(alow, ahigh, dtype=np.float32)
 		self.observation_space = spaces.Box(olow, ohigh, dtype=np.float32)
 
-		glb.lock.acquire()
-		self.i = glb.fifoi
-		self.fout = glb.fifofs[self.i][0]
-		self.fin = glb.fifofs[self.i][1]
-		glb.fifoi += 1
-		glb.lock.release()
-		if not os.path.exists(glb.logdir):
-			os.makedirs(glb.logdir)
+		self.i = id
+		self.n = 0
+		print(f"id: {self.i}")
+		print("fifofnms:", fifofnms)
+#		print("glb.fifofnms:", glb.fifofnms)
+		self.fout = open(fifofnms[0], 'w')
+		self.fin = open(fifofnms[1], 'r')
+#		self.fout = open(glb.fifofnms[self.i][0], 'w')
+#		self.fin = open(glb.fifofnms[self.i][1], 'r')
 		self.file_writer = tf.summary.create_file_writer(glb.logdir + f"/Env{self.i + 1:02}")
+
+		self.hasstarted = False
+		self.hasfinished = False
+		self.spdthres = 13
+		self.isdone = False
+		self.rwdspeed = 0
+		self.rwdfreeze = 0
+		self.rwdstart = 0
+		self.rwdfinish = 0
+		self.rwdoldarea = 0
+		self.rwdnewarea = 0
+		self.rwdcurarea = 0
+		self.rwdjump = 0
+		self.rwdckpnt = 0
+		self.rwdhook = 0
+		self.rwdtimealive = 0
+		self.totalrwd = 0
+		self.prevrwd = 0
+		self.hook_time = 0
+		self.hookstarted = False
+		self.time_alive = 0
+		self.reset_time = 0
 
 	def step(self, actn):
 		info = {}
@@ -140,14 +138,14 @@ class KoGEnv(gym.Env):
 			if hook_dt < glb.minhooktime:
 				self.rwdhook += glb.shorthookw
 
-		print(f"{self.n}: {self.i}: writing(1)...")
+#		print(f"{self.n}: {self.i}: writing(1)...")
 		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
-		print(f"{self.n} r{self.i}: eading(1)...")
+#		print(f"{self.n} r{self.i}: reading(1)...")
 		obs, inp, rwds = getobsinprwd(self.fin, True)
-		print(f"{self.n}: {self.i} done")
+#		print(f"{self.n}: {self.i} done")
 
 		if rwds[0] < 0:
-			self.rwdoldarea += glb.oldareaw * (rwds[3] - 1)
+			self.rwdoldarea += glb.oldareaw * (rwds[0] - 1)
 		elif rwds[0] > 0:
 			self.rwdnewarea += glb.newareaw
 		else:
@@ -204,11 +202,11 @@ class KoGEnv(gym.Env):
 
 		print(f"{self.n:6}\r", end = '')
 		if self.n % glb.nstp == 0 and self.n != 0:
-			print(f"{self.n}: {self.i}: writing(2)...")
+#			print(f"{self.n}: {self.i}: writing(2)...")
 			fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
-			print(f"{self.n}: {self.i}: reading(2)...")
+#			print(f"{self.n}: {self.i}: reading(2)...")
 			obs = getobsinprwd(self.fin, False)[0]
-			print(f"{self.n}: {self.i}: done")
+#			print(f"{self.n}: {self.i}: done")
 			reward = 0
 
 		self.n += 1
@@ -219,11 +217,11 @@ class KoGEnv(gym.Env):
 		return np.array(obs), reward, done, info
 
 	def reset(self):
-		print(f"{self.n}: {self.i}: writing(3)...")
+#		print(f"{self.n}: {self.i}: writing(3)...")
 		fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
-		print(f"{self.n}: {self.i}: reading(3)...")
+#		print(f"{self.n}: {self.i}: reading(3)...")
 		obs = getobsinprwd(self.fin, False)[0]
-		print(f"{self.n}: {self.i}: done")
+#		print(f"{self.n}: {self.i}: done")
 
 		self.reset_time = time()
 		self.time_alive = 0

@@ -321,28 +321,51 @@ int CCollision::IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *p
 	return 0;
 }
 
-int CCollision::IntersectLineAllTiles(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) const
+int CCollision::GetAllTiles(int x, int y) const
+{
+	if(!m_pTiles)
+		return 0;
+
+	int Nx = clamp(x / 32, 0, m_Width - 1);
+	int Ny = clamp(y / 32, 0, m_Height - 1);
+	int pos = Ny * m_Width + Nx;
+
+	return m_pTiles[pos].m_Index;
+}
+
+int CCollision::TileIs(vec2 pos, int tile) const
+{
+	int index = GetAllTiles(round_to_int(pos.x), round_to_int(pos.y));
+	return index == tile;
+}
+
+int CCollision::IntersectLineTile(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision, int tile) const
 {
 	float Distance = distance(Pos0, Pos1);
 	int End(Distance + 1);
-	vec2 Pos, Last = Pos0;
+	vec2 Last = Pos0;
+	int ix = 0, iy = 0; // Temporary position for checking collision
+	for(int i = 0; i <= End; i++)
+	{
+		float a = i / (float)End;
+		vec2 Pos = mix(Pos0, Pos1, a);
+		ix = round_to_int(Pos.x);
+		iy = round_to_int(Pos.y);
 
-	for (int i = 0; i <= End; i++) {
-		Pos = mix(Pos0, Pos1, i / (float)End);
-
-		if (CheckPoint(Pos)) {
-			if (pOutCollision)
+		if(TileIs(Pos, tile))
+		{
+			if(pOutCollision)
 				*pOutCollision = Pos;
-			if (pOutBeforeCollision)
+			if(pOutBeforeCollision)
 				*pOutBeforeCollision = Last;
-			return GetCollisionAt(Pos.x, Pos.y);
+			return tile;
 		}
 
 		Last = Pos;
 	}
-	if (pOutCollision)
+	if(pOutCollision)
 		*pOutCollision = Pos1;
-	if (pOutBeforeCollision)
+	if(pOutBeforeCollision)
 		*pOutBeforeCollision = Pos1;
 	return 0;
 }

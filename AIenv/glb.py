@@ -22,16 +22,18 @@ mintimealive = 1 / env_speed
 
 totalrwd = 0
 
-nrays = 8
+nrays = 16
 totalrays = nrays * 2
 
-iters = 10
+iters = 4
 nstp = 2048 * 8
 bs = 2048 * 8
 lr = 0.0005
 
 logdir = f"logs/{stamp}/log_ai_rewards"
 
-fifoi = 0 # fifo index available for use
-lock = threading.Lock()
-fifofs = []
+#fifoi = 0 # fifo index available for use
+#lock = threading.Lock()
+#fifofs = []
+#fifofnms: list
+fifofnms = []
