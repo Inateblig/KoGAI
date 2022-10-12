@@ -90,7 +90,13 @@ ai_reply(int cid, CCharacter *ch, int tick)
 		/* zogtib big-brain magic 🪄 */
 		if ((!rt->tl && !ch->gotrwd[t = rt->tf] && cln->MovedThruTile(ppos, pos, t) >= 0) ||
 		(rt->tl && (t = cln->MovedThruRange(ppos, pos, rt->tf, rt->tl)) >= 0 && !ch->gotrwd[t])) {
-			rt->rwd = 1;
+			if (t < TILE_TIME_CHECKPOINT_FIRST) {
+				rt->rwd = 1;
+//				printf("rt->rwd = %d\n", rt->rwd);
+			} else {
+				rt->rwd = t - TILE_TIME_CHECKPOINT_FIRST + 1;
+//				printf("rt->rwd = %d\n", rt->rwd);
+			}
 			ch->gotrwd[t] = 1;
 		}
 	}

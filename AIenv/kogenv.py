@@ -59,8 +59,10 @@ maxvel = 6000 / 32
 maxhooklen = 800 / 32
 firstobs = [0] * (glb.totalrays + 6)
 
-alow = np.array([-1, -1, 0, 0])
-ahigh = np.array([1, 1, 1, 1])
+#alow = np.array([-1, -1, 0, 0])
+#ahigh = np.array([1, 1, 0, 1])
+alow = np.array([-1, -1, 0])
+ahigh = np.array([1, 1, 1])
 
 olow = np.array([-1] * glb.totalrays + \
 	[-maxvel, -maxvel, \
@@ -117,15 +119,12 @@ class KoGEnv(gym.Env):
 
 		dir = int(actn[0] * 2)
 		ms_distance = 200
-#		tx = int(actn[1] * ms_distance)
-#		ty = int(actn[2] * ms_distance)
 		tx = int(math.sin(actn[1] * math.pi) * ms_distance)
 		ty = int(-math.cos(actn[1] * math.pi) * ms_distance)
 #		print(f"{tx:05.03f}\t{ty:05.03f}")
-		jump = int(actn[2] * 2)
-		hook = int(actn[3] * 2)
-#		jump = int(actn[3] * 2)
-#		hook = int(actn[4] * 2)
+		jump = 0
+#		jump = int(actn[2] * 2)
+		hook = int(actn[2] * 2)
 
 		if hook == 1:
 			self.rwdhook += glb.hookw
@@ -163,8 +162,8 @@ class KoGEnv(gym.Env):
 			self.hasfinished = True
 #			print("finish", rwdfinish, "self.i", self.i)
 			self.isdone = True
-		if rwds[4] == 1:
-			self.rwdckpnt += glb.ckpntw
+		if rwds[4] >= 1:
+			self.rwdckpnt += glb.finishw * rwds[4] /25
 
 		if (abs(math.sqrt(inp.vel.x**2 + inp.vel.y**2))) >= self.spdthres:
 			self.rwdspeed += glb.speedw

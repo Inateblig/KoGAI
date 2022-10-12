@@ -14,9 +14,7 @@ gettiledist(float ds[], size_t nd, CCollision *cln, vec2 p, int tile)
 	for (i = 0; i < nd; i++) {
 		a = i * 2*pi / nd;
 		e = vec2(sinf(a), -cosf(a)) * ai_RAYLEN;
-		if (tile == cln->IntersectLineTile(p, p + e, &cp, 0, tile))
-			ds[i] = length(cp - p) / ai_RAYLEN;
-		else
-			ds[i] = -1.f;
+		if (!cln->IntersectLineTile(&ds[i], p, e, tile))
+			ds[i] = -1;
 	}
 }

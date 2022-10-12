@@ -1,0 +1,16 @@
+./mastersrv/Cargo.toml:tokio = { version = "1.6.0", features = ["macros", "rt", "[01;32mrt-[0mmulti-thread"] }
+./engine/client/graphics_threaded.h:		pVe[01;32mrt-[0m>m_Color = m_aColor[ColorIndex];
+./engine/external/zlib/deflate.c:        fprintf(stderr,"\\[%d,%d]", sta[01;32mrt-[0mmatch, length);
+./engine/external/zlib/deflate.c:                s->inse[01;32mrt-[0m-;
+./engine/external/zlib/deflate.c:            check_match(s, s->strsta[01;32mrt-[0m1, s->prev_match, s->prev_length);
+./engine/external/zlib/deflate.c:             * strsta[01;32mrt-[0m1 and strstart are already inserted. If there is not
+./engine/external/zlib/deflate.c:            Tracevv((stderr,"%c", s->window[s->strsta[01;32mrt-[0m1]));
+./engine/external/zlib/deflate.c:            _tr_tally_lit(s, s->window[s->strsta[01;32mrt-[0m1], bflush);
+./engine/external/zlib/deflate.c:        Tracevv((stderr,"%c", s->window[s->strsta[01;32mrt-[0m1]));
+./engine/external/zlib/deflate.c:        _tr_tally_lit(s, s->window[s->strsta[01;32mrt-[0m1], bflush);
+./engine/server/ai.cpp:		if ((![01;32mrt-[0m>tl && !ch->gotrwd[t = [01;32mrt-[0m>tf] && cln->MovedThruTile(ppos, pos, t) >= 0) ||
+./engine/server/ai.cpp:		([01;32mrt-[0m>tl && (t = cln->MovedThruRange(ppos, pos, [01;32mrt-[0m>tf, [01;32mrt-[0m>tl)) >= 0 && !ch->gotrwd[t])) {
+./engine/server/ai.cpp:				[01;32mrt-[0m>rwd = 1;
+./engine/server/ai.cpp:				printf("[01;32mrt-[0m>rwd = %d", [01;32mrt-[0m>rwd);
+./engine/server/ai.cpp:				[01;32mrt-[0m>rwd = t - TILE_TIME_CHECKPOINT_FIRST + 1;
+./engine/server/ai.cpp:				printf("[01;32mrt-[0m>rwd = %d", [01;32mrt-[0m>rwd);

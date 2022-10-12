@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
 
 	loadfrom = 0
-#	models_dir = "models/20220929_132514"
+#	models_dir = "models/20221003_102445"
 #	Train loop
 	for i in range(loadfrom,200):
 		model = PPO.load(f"{models_dir}/model{i}", print_system_info=True)
