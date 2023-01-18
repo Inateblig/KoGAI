@@ -1275,3 +1275,124 @@ int CCollision::IsFTimeCheckpoint(int Index) const
 		return z - TILE_TIME_CHECKPOINT_FIRST;
 	return -1;
 }
+
+/* for ai */
+int
+CCollision::MovedThruFn(FPARS(vec2, prev, pos), int (*matches)(int t, void *), void *arg)
+{
+	std::list<int> inds = GetMapIndices(prev, pos);
+	int t;
+
+	if (!inds.empty()) {
+		for (int &ind : inds) {
+			if ((*matches)(t = GetTileIndex(ind), arg))
+				return t;
+			if ((*matches)(t = GetFTileIndex(ind), arg))
+				return t;
+		}
+	} else {
+		if ((*matches)(t = GetTileIndex(GetPureMapIndex(pos)), arg))
+			return t;
+		if ((*matches)(t = GetFTileIndex(GetPureMapIndex(pos)), arg))
+			return t;
+	}
+	return -1;
+}
+
+intern int
+istile(int t, void *arg)
+{
+	return t == *(int *)arg;
+}
+
+int
+CCollision::MovedThruTile(FPARS(vec2, prev, pos), int tile)
+{
+	return MovedThruFn(prev, pos, &istile, &tile);
+}
+
+intern int
+isinrange(int t, void *arg)
+{
+	int *tiles = (int *)arg;
+
+	return t >= tiles[0] && t <= tiles[1];
+}
+
+int
+CCollision::MovedThruRange(FPARS(vec2, prev, pos), FPARS(int, tfrom, tto))
+{
+	int tiles[2] = { tfrom, tto };
+
+	return MovedThruFn(prev, pos, &isinrange, tiles);
+}
+
+intern int
+getpntisn(ivec2 *isn, float *sc, FPARS(vec2, pv, dv), const int in[2])
+{
+	float (*head[2])(float) = {&floorf, &ceilf};
+	float *d, *p;
+	float s, ms, f, fl;
+	int i, ii;
+
+	p = &pv.x, d = &dv.x;
+	ms = 2.f;
+	for (i = 0; i < 2; i++) {
+		if (!d[i])
+			continue;
+		s = ((*head[d[i] > 0.f])(p[i]) - p[i]) / d[i];
+		if (!s && (d[i] > 0.f) == in[i])
+			s = 1.f / fabsf(d[i]);
+		if (ms > s)
+			ii = i, ms = s;
+	}
+	if (ms > 1.f)
+		return -1;
+	for (i = 0; i < 2; i++)
+		if (i != ii) {
+			fl = floorf(f = p[i] + ms * d[i]);
+			(&isn->x)[i] = fl - (f == fl && !in[i]);
+		}
+	(&isn->x)[ii] += d[ii] > 0.f ? 1.f : -1.f;
+	*sc = ms;
+	return ii; /* intesection index */
+}
+
+int
+CCollision::gettile(ivec2 *p)
+{
+	int x, y;
+
+	if (!m_pTiles)
+		return 0;
+
+	x = clamp(p->x, 0, m_Width - 1);
+	y = clamp(p->y, 0, m_Height - 1);
+	return m_pTiles[y*m_Width + x].m_Index;
+}
+
+int
+CCollision::IntersectLineTile(float *tsc, FPARS(vec2, p, d), int tile)
+{
+	vec2 v2;
+	ivec2 tp;
+	float sc;
+	int in[2] = {1, 1};
+	int ii;
+
+	tp = ivec2(p.x / 32.f, p.y / 32.f);
+	d = d / 32.f;
+	*tsc = 0.f;
+	do {
+//		if ((t = (*matches)(gettile(&tp, arg)) >= 0)
+		if (gettile(&tp) == tile)
+			return 1;
+		if ((ii = getpntisn(&tp, &sc, p, d, in)) < 0)
+			break;
+		in[ii] = (&d.x)[ii] > 0.f;
+		p += (v2 = d * sc);
+		d -= v2;
+		*tsc += sc;
+	} while (1);
+	return 0;
+}

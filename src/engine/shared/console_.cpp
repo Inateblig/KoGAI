@@ -17,12 +17,6 @@
 #include <iterator> // std::size
 #include <new>
 
-#include <stdio.h>
-#include <base/util.h>
-
-#include <engine/client/ai.h>
-#include "fifos.h"
-
 // todo: rework this
 
 const char *CConsole::CResult::GetString(unsigned Index)
@@ -1057,34 +1051,26 @@ void CConsole::Init()
 
 void CConsole::ParseArguments(int NumArgs, const char **ppArguments)
 {
-	int i, argc;
-	const char **argv;
-
-	for (i = 0; i < NumArgs; i++) {
+	for(int i = 0; i < NumArgs; i++)
+	{
 		// check for scripts to execute
-		if (!strcmp(ppArguments[i], "-f")) {
+		if(ppArguments[i][0] == '-' && ppArguments[i][1] == 'f' && ppArguments[i][2] == 0)
+		{
 			if(NumArgs - i > 1)
 				ExecuteFile(ppArguments[i + 1], -1, true, IStorage::TYPE_ABSOLUTE);
 			i++;
-		} else if (!str_comp("-s", ppArguments[i]) || !str_comp("--silent", ppArguments[i]))
+		}
+		else if(!str_comp("-s", ppArguments[i]) || !str_comp("--silent", ppArguments[i]))
+		{
+			// skip silent param
 			continue;
-		else if (!strcmp(ppArguments[i], "-F")) {
-			i++;
-			goto getfifos;
-		} else
+		}
+		else
+		{
+			// search arguments for overrides
 			ExecuteLine(ppArguments[i]);
+		}
 	}
-	return;
-getfifos:
-	argc = NumArgs - i;
-	argv = &ppArguments[i];
-	if (argc != 2)
-		ferrf("Expected 2 fifo filenames");
-
-	infifo = openfifo(*argv++, "r");
-	outfifo = openfifo(*argv++, "w");
-	setvbuf(infifo, 0, _IOLBF, 0); /* line-buffered */
-	setvbuf(outfifo, 0, _IOLBF, 0);
 }
 
 void CConsole::AddCommandSorted(CCommand *pCommand)

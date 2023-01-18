@@ -71,6 +71,8 @@
 #include "prediction/entities/character.h"
 #include "prediction/entities/projectile.h"
 
+#include <engine/client/ai.h>
+
 using namespace std::chrono_literals;
 
 const char *CGameClient::Version() const { return GAME_VERSION; }
@@ -1257,7 +1259,7 @@ void CGameClient::OnNewSnapshot()
 
 					if(pInfo->m_Local)
 					{
-						m_Snap.m_LocalClientID = Item.m_ID;
+						ai_CID = m_Snap.m_LocalClientID = Item.m_ID;
 						m_Snap.m_pLocalInfo = pInfo;
 
 						if(pInfo->m_Team == TEAM_SPECTATORS)

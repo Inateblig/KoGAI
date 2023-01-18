@@ -186,8 +186,8 @@ else()
   )
 endif()
 
-set(SERVER_EXECUTABLE DDNet-Server CACHE STRING "Name of the built server executable")
-set(CLIENT_EXECUTABLE DDNet CACHE STRING "Name of the build client executable")
+set(SERVER_EXECUTABLE DDNet-Server-AI CACHE STRING "Name of the built server executable")
+set(CLIENT_EXECUTABLE DDNet-AI CACHE STRING "Name of the build client executable")
 
 ########################################################################
 # Compiler flags
@@ -1687,6 +1687,12 @@ add_custom_command(OUTPUT "src/game/generated/wordlist.h"
 
 # Sources
 set_src(BASE GLOB_RECURSE src/base
+  # for ai #
+  cycbuf.cpp
+  cycbuf.h
+  util.h
+  do.h
+
   bezier.cpp
   bezier.h
   color.h
@@ -1745,6 +1751,10 @@ set_src(ENGINE_INTERFACE GLOB src/engine
   warning.h
 )
 set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
+  # for ai #
+  fifos.cpp
+  fifos.h
+
   assertion_logger.cpp
   assertion_logger.h
   compression.cpp
@@ -1930,6 +1940,10 @@ if(CLIENT)
   list(APPEND TARGETS_OWN ${TARGET_STEAMAPI})
 
   set_src(ENGINE_CLIENT GLOB_RECURSE src/engine/client
+    # for ai #
+    ai.cpp
+    ai.h
+
     backend/backend_base.cpp
     backend/backend_base.h
     backend/glsl_shader_compiler.cpp
@@ -1992,6 +2006,10 @@ if(CLIENT)
     video.h
   )
   set_src(GAME_CLIENT GLOB_RECURSE src/game/client
+    # for ai #
+    ray.cpp
+    ray.h
+
     animstate.cpp
     animstate.h
     component.cpp

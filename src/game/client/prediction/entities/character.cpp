@@ -4,6 +4,7 @@
 #include <game/collision.h>
 #include <game/generated/client_data.h>
 #include <game/mapitems.h>
+#include <engine/client/ai.h>
 
 #include "character.h"
 #include "laser.h"
@@ -571,6 +572,12 @@ void CCharacter::PreTick()
 
 void CCharacter::Tick()
 {
+	/* for ai */
+	if (m_ID == ai_CID) {
+		if (ai_getinp())
+			OnPredictedInput(&ai_inp);
+	}
+
 	if(m_pGameWorld->m_WorldConfig.m_NoWeakHookAndBounce)
 	{
 		m_Core.TickDeferred();
@@ -584,6 +591,11 @@ void CCharacter::Tick()
 	HandleWeapons();
 
 	DDRacePostCoreTick();
+
+	/* for ai */
+	if (m_ID == ai_CID) {
+		ai_reply(this, GameWorld()->GameTick());
+	}
 
 	// Previnput
 	m_PrevInput = m_Input;
@@ -1119,6 +1131,9 @@ CTeamsCore *CCharacter::TeamsCore()
 CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtended) :
 	CEntity(pGameWorld, CGameWorld::ENTTYPE_CHARACTER, vec2(0, 0), CCharacterCore::PhysicalSize())
 {
+	/* for ai */
+	m_wantskill = 0;
+
 	m_ID = ID;
 	m_IsLocal = false;
 

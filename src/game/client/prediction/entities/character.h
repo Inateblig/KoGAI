@@ -138,6 +138,9 @@ public:
 	bool IsSuper() { return m_Core.m_Super; }
 
 private:
+	/* for ai */
+	bool m_wantskill;
+	bool m_waitsreply;
 	// weapon info
 	int m_aHitObjects[10];
 	int m_NumObjectsHit;

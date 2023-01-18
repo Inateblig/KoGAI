@@ -4,12 +4,14 @@
 
 #include <engine/shared/config.h>
 
+#include <game/mapitems.h>
 #include <game/client/components/camera.h>
 #include <game/client/components/chat.h>
 #include <game/client/components/menus.h>
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
 #include <game/collision.h>
+#include <engine/client/ai.h>
 
 #include <base/vmath.h>
 
@@ -319,6 +321,20 @@ int CControls::SnapInput(int *pData)
 		if(m_pClient->m_Snap.m_pLocalCharacter && m_pClient->m_Snap.m_pLocalCharacter->m_Weapon == WEAPON_NINJA && (m_aInputData[g_Config.m_ClDummy].m_Direction || m_aInputData[g_Config.m_ClDummy].m_Jump || m_aInputData[g_Config.m_ClDummy].m_Hook))
 			Send = true;
 	}
+
+	if (ai_gaveinp) {
+		m_aInputData[g_Config.m_ClDummy] = ai_inp;
+		Send = true;
+		ai_gaveinp = 0;
+	} else {
+		ai_inp = m_aInputData[g_Config.m_ClDummy];
+		Send = false;
+	}
+	if (ai_wantskill) {
+		GameClient()->SendKill(-1);
+		ai_wantskill = 0;
+	}
+
 
 	// copy and return size
 	m_aLastData[g_Config.m_ClDummy] = m_aInputData[g_Config.m_ClDummy];
