@@ -98,7 +98,7 @@ class KoGEnv(gym.Env):
 		self.fin = open(fifofnms[1], 'r')
 #		self.fout = open(glb.fifofnms[self.i][0], 'w')
 #		self.fin = open(glb.fifofnms[self.i][1], 'r')
-		self.file_writer = tf.summary.create_file_writer(glb.logdir + f"/Env{self.i + 1:02}")
+		self.file_writer = tf.summary.create_file_writer(glb.logdir + f"log_ai_rewards/Env{self.i + 1:02}")
 
 		self.hasstarted = False
 		self.hasfinished = False

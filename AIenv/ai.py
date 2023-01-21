@@ -22,9 +22,8 @@ if __name__ == '__main__':
 
 	glb.fifofnms = [fifofnms[i:i+2] for i in range(0, len(fifofnms), 2)]
 
-	stamp = glb.stamp
-	models_dir = f"models/{stamp}/"
-	logdir = f"logs/{stamp}/"
+	models_dir = glb.models_dir
+	logdir = glb.logdir
 
 	if not os.path.exists(models_dir):
 		os.makedirs(models_dir)
@@ -46,31 +45,28 @@ if __name__ == '__main__':
 		def __call__(self):
 			return kogenv.KoGEnv(self.i, self.fifofnms)
 	env = SubprocVecEnv([EnvMaker(i) for i in range(nenvs)]) #, start_method='fork')
-#	env = make_vec_env(kogenv.KoGEnv, n_envs=nenvs, env_kwargs={"id": id},
-#		vec_env_cls=SubprocVecEnv)
-	model = PPO('MlpPolicy', env, verbose=2, tensorboard_log=logdir,
-		learning_rate = lr, n_steps=nstp, batch_size = bs)
-	print(model.policy)
+
+	if not glb.ContinueTraining:
+		model = PPO('MlpPolicy', env, verbose=2, tensorboard_log=logdir,
+			learning_rate = lr, n_steps=nstp, batch_size = bs)
+		print(model.policy)
+
+		model.learn(total_timesteps=TOTALTIMESTEPS)
+		model.save(f"{models_dir}/model0")
+		print("modeldone 0")
 
 
-	model.learn(total_timesteps=TOTALTIMESTEPS)
-	model.save(f"{models_dir}/model0")
-	print("modeldone 0")
-
-
-	loadfrom = 0
-#	models_dir = "models/20221003_102445"
 #	Train loop
-	for i in range(loadfrom,200):
+	for i in range(glb.loadfrom,200):
 		model = PPO.load(f"{models_dir}/model{i}", print_system_info=True)
 		model.set_env(env)
 
 		model.learn(total_timesteps=TOTALTIMESTEPS, reset_num_timesteps=False)
 		model.save(f"{models_dir}/model{i+1}")
-		print("modeldone", i)
+		print("modeldone", i + 1)
 
 #	Load fromm here
-#	model = PPO.load(f"{models_dir}/model{loadfrom}", print_system_info=True)
+#	model = PPO.load(f"{models_dir}/model{glb.loadfrom}", print_system_info=True)
 #	model.set_env(env)
 #	obs = env.reset()
 #	while True:
