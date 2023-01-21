@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cerrno>
 #include <poll.h>
+#include <set>
 
 #include <base/util.h>
 #include <base/cycbuf.h>
@@ -130,4 +131,132 @@ ai_reply(CCharacter *ch, int tick)
 	for (i = 0; i < NELM(ftds); i++)
 		fprintf(outfifo, " %a", ftds[i]);
 	fprintf(outfifo, "\n"); /* line-buffered */
+}
+
+intern int fldw, fldh;
+intern signed char *ai_field;
+
+struct TileV {
+	float d;
+	ivec2 p;
+
+	int operator<(const TileV &t) const
+	{
+		return d < t.d;
+	}
+};
+
+intern int
+issolid(int t)
+{
+	return t == TILE_SOLID || t == TILE_NOHOOK;
+}
+
+intern int
+tileidxat(FPARS(int, x, y))
+{
+	return y * fldw + x;
+}
+
+intern int
+tileidxatv(ivec2 p)
+{
+	return tileidxat(p.x, p.y);
+}
+
+intern int
+tileat(CCollision *c, FPARS(int, x, y))
+{
+	return c->GetTileIndex(tileidxat(x, y));
+}
+
+intern int
+tileatv(CCollision *c, ivec2 p)
+{
+	return tileat(c, p.x, p.y);
+}
+
+void
+ai_setupfield(CCollision *cln)
+{
+	std::multiset<TileV> tilevs;
+	TileV tv;
+	float *bd; /* best distance */
+	int dx, dy, x, y, i;
+
+	fldw = cln->GetWidth();
+	fldh = cln->GetHeight();
+
+	if (!(ai_field = (decltype(ai_field))realloc(ai_field, fldw * fldh * sizeof *ai_field)))
+		ferrn("realloc");
+	if (!(bd = (decltype(bd))malloc(fldw * fldh * sizeof *bd)))
+		ferrn("malloc");
+
+	tv.d = 0.f;
+	for (x = 0; x < fldw; x++) {
+		tv.p.x = x;
+		for (y = 0; y < fldh; y++) {
+			i = tileidxat(x, y);
+			ai_field[i] = 4;
+			if (cln->GetTileIndex(i) == TILE_FINISH) {
+				tv.p.y = y;
+				tilevs.insert(tv);
+				printf("finish_t: %d, %d\n", tv.p.x, tv.p.y);
+				bd[i] = 0.f;
+			} else
+				bd[i] = HUGE_VALF;
+		}
+	}
+
+	while (tilevs.size()) {
+		auto const ctv = tilevs.begin();
+
+		printf("ctv: %f, (%d, %d)\n", ctv->d, ctv->p.x, ctv->p.y);
+		for (dx = -1; dx <= 1; dx++)
+		for (dy = -1; dy <= 1; dy++) {
+			if (!dx && !dy)
+				continue;
+			tv.p.x = ctv->p.x + dx;
+			tv.p.y = ctv->p.y + dy;
+			if (tv.p.x < 0 || tv.p.x >= fldw ||
+			    tv.p.y < 0 || tv.p.y >= fldh)
+				continue;
+
+			tv.d = ctv->d;
+			if (dx && dy) {
+				if (issolid(tileat(cln, tv.p.x, ctv->p.y)) ||
+				    issolid(tileat(cln, ctv->p.x, tv.p.y)))
+					continue;
+				tv.d += M_SQRT2;
+			} else
+				tv.d += 1.f;
+			if (issolid(tileatv(cln, tv.p)))
+				continue;
+
+			i = tileidxatv(tv.p);
+			if (bd[i] <= tv.d)
+				continue;
+			bd[i] = tv.d;
+			ai_field[i] = (1 - dy) * 3 + (1 - dx);
+			tilevs.insert(tv);
+		}
+		tilevs.erase(ctv);
+	}
+
+	free(bd);
+}
+
+vec2
+ai_getfield(FPARS(int, x, y))
+{
+	vec2 dir;
+	int v;
+
+	if (x < 0 || x >= fldw ||
+	    y < 0 || y >= fldh)
+		return vec2(0, 0);
+	v = ai_field[tileidxat(x, y)];
+	dir.x = v % 3 - 1;
+	dir.y = v / 3 - 1;
+	return dir;
 }

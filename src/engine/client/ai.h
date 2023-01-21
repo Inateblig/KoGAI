@@ -18,4 +18,6 @@ extern bool ai_gotrwd[256];
 
 int ai_getinp();
 void ai_reply(CCharacter *ch, int tick);
+void ai_setupfield(CCollision *cln);
+vec2 ai_getfield(FPARS(int, x, y));
 #endif

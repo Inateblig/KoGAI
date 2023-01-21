@@ -25,6 +25,11 @@
 #include <base/color.h>
 #include <base/math.h>
 
+/* for ai */
+#include <base/util.h>
+#include <base/do.h>
+#include <engine/client/ai.h>
+
 void CPlayers::RenderHand(CTeeRenderInfo *pInfo, vec2 CenterPos, vec2 Dir, float AngleOffset, vec2 PostRotOffset, float Alpha)
 {
 	vec2 HandPos = CenterPos + Dir;
@@ -854,6 +859,7 @@ void CPlayers::OnRender()
 	{
 		const CGameClient::CClientData *pLocalClientData = &m_pClient->m_aClients[LocalClientID];
 		RenderHookCollLine(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, LocalClientID);
+		RenderAIDirV(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, LocalClientID);
 		RenderPlayer(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, &m_aRenderInfo[LocalClientID], LocalClientID);
 	}
 }
@@ -929,4 +935,58 @@ void CPlayers::OnInit()
 
 	Graphics()->QuadsSetSubset(0.f, 0.f, 1.f, 1.f);
 	Graphics()->QuadsSetRotation(0.f);
+}
+
+/* for ai */
+intern void
+drawfatline(IGraphics *gfx, FPARS(vec2, a, b), float w)
+{
+	vec2 p[4], n, d;
+
+	d = b - a;
+	n = normalize(vec2(d.y, -d.x));
+	p[0] = a + n * w;
+	p[1] = a - n * w;
+	p[2] = b + n * w;
+	p[3] = b - n * w;
+
+//	IGraphics::CFreeformItem FreeformItem(Pos0.x, Pos0.y, Pos1.x, Pos1.y, Pos2.x, Pos2.y, Pos3.x, Pos3.y);
+	/* when zogtib is having fun 🤯 */
+	#define CM ,
+	#define CP(I, C, V) V.C
+	#define P(I, C) do2rv(CP,,, CM, p[I])
+	IGraphics::CFreeformItem ffi(do4r(P,,, CM));
+	#undef P
+	#undef CP
+	#undef CM
+	gfx->QuadsDrawFreeform(&ffi, 1);
+}
+
+void CPlayers::RenderAIDirV(
+	const CNetObj_Character *pPrevChar,
+	const CNetObj_Character *pPlayerChar,
+	int ClientID,
+	float Intra)
+{
+
+	vec2 pos, dir;
+	float DirVAlpha = 1;
+	int width;
+
+	Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+	DirVAlpha *= (float)g_Config.m_ClAIVAlpha / 100;
+	ColorRGBA DirVColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClAIDirVColor));
+	Graphics()->SetColor(DirVColor.WithAlpha(DirVAlpha));
+
+	pos = m_pClient->m_aClients[ClientID].m_RenderPos;
+	width = 0.5f + (float)(g_Config.m_ClAIDirVLnWidth - 1) * 0.25f;
+//	printf("pos.x: %f, pos.y: %f\n", pos.x, pos.y);
+	dir = ai_getfield(pos.x / 32, pos.y / 32) * 32 * 2;
+	dir.x += pos.x;
+	dir.y += pos.y;
+
+	drawfatline(Graphics(), pos, dir, width);
+
+	Graphics()->QuadsEnd();
 }

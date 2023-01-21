@@ -322,17 +322,19 @@ int CControls::SnapInput(int *pData)
 			Send = true;
 	}
 
-	if (ai_gaveinp) {
-		m_aInputData[g_Config.m_ClDummy] = ai_inp;
-		Send = true;
-		ai_gaveinp = 0;
-	} else {
-		ai_inp = m_aInputData[g_Config.m_ClDummy];
-		Send = false;
-	}
-	if (ai_wantskill) {
-		GameClient()->SendKill(-1);
-		ai_wantskill = 0;
+	if (!g_Config.m_ClIgnoreAI) {
+		if (ai_gaveinp) {
+			m_aInputData[g_Config.m_ClDummy] = ai_inp;
+			Send = true;
+			ai_gaveinp = 0;
+		} else {
+			ai_inp = m_aInputData[g_Config.m_ClDummy];
+			Send = false;
+		}
+		if (ai_wantskill) {
+			GameClient()->SendKill(-1);
+			ai_wantskill = 0;
+		}
 	}
 
 

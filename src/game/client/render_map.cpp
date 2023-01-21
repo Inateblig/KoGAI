@@ -16,6 +16,12 @@
 #include <chrono>
 #include <cmath>
 
+/* for ai */
+#include <cstdio>
+#include <base/util.h>
+#include <base/do.h>
+#include <engine/client/ai.h>
+
 using namespace std::chrono_literals;
 
 void CRenderTools::RenderEvalEnvelope(CEnvPoint *pPoints, int NumPoints, int Channels, std::chrono::nanoseconds TimeNanos, ColorRGBA &Result)
@@ -198,6 +204,7 @@ void CRenderTools::RenderTileRectangle(int RectX, int RectY, int RectW, int Rect
 		pfnEval(ColorEnvOffset, ColorEnv, Channels, pUser);
 	}
 
+//	Graphics()->TextureClear();
 	Graphics()->QuadsBegin();
 	Graphics()->SetColor(Color.r * Channels.r, Color.g * Channels.g, Color.b * Channels.b, Color.a * Channels.a);
 
@@ -1050,6 +1057,71 @@ void CRenderTools::RenderTunemap(CTuneTile *pTune, int w, int h, float Scale, Co
 			}
 		}
 
+	Graphics()->QuadsEnd();
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
+/* for ai */
+intern void
+drawfatline(IGraphics *gfx, FPARS(vec2, a, b), float w)
+{
+	vec2 p[4], n, d;
+
+	d = b - a;
+	n = normalize(vec2(d.y, -d.x));
+	p[0] = a + n * w;
+	p[1] = a - n * w;
+	p[2] = b + n * w;
+	p[3] = b - n * w;
+
+//	IGraphics::CFreeformItem FreeformItem(Pos0.x, Pos0.y, Pos1.x, Pos1.y, Pos2.x, Pos2.y, Pos3.x, Pos3.y);
+	/* when zogtib is having fun 🤯 */
+	#define CM ,
+	#define CP(I, C, V) V.C
+	#define P(I, C) do2rv(CP,,, CM, p[I])
+	IGraphics::CFreeformItem ffi(do4r(P,,, CM));
+	#undef P
+	#undef CP
+	#undef CM
+	gfx->QuadsDrawFreeform(&ffi, 1);
+}
+
+void CRenderTools::RenderAITileV(CTile *pTiles, int w, int h, float Scale, ColorRGBA Color, int RenderFlags,
+	ENVELOPE_EVAL pfnEval, void *pUser, int ColorEnv, int ColorEnvOffset)
+{
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	float VAlpha = 1;
+	int width;
+
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+
+	VAlpha *= (float)g_Config.m_ClAIVAlpha / 100;
+	ColorRGBA DirVColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClAIFieldVColor));
+	Graphics()->SetColor(DirVColor.WithAlpha(VAlpha));
+	width = 0.5f + (float)(g_Config.m_ClAIDirVLnWidth - 1) * 0.25f;
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	for(int y = StartY; y < EndY; y++) {
+		for(int x = StartX; x < EndX; x++) {
+			vec2 pos, dir;
+
+			pos.x = x * 32.f + 16.f;
+			pos.y = y * 32.f + 16.f;
+			if (x < 0 || y < 0)
+				continue;
+			dir = ai_getfield(x, y) * 15;
+			if (!dir.x && !dir.y)
+				continue;
+			drawfatline(Graphics(), pos, pos + dir, width);
+		}
+	}
 	Graphics()->QuadsEnd();
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }

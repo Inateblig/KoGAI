@@ -35,6 +35,9 @@
 #include <game/mapitems.h>
 #include <game/version.h>
 
+/* for ai */
+#include <engine/client/ai.h>
+
 #include "components/background.h"
 #include "components/binds.h"
 #include "components/broadcast.h"
@@ -483,6 +486,9 @@ void CGameClient::OnConnected()
 	CRaceHelper::ms_aFlagIndex[1] = -1;
 
 	CTile *pGameTiles = static_cast<CTile *>(Layers()->Map()->GetData(Layers()->GameLayer()->m_Data));
+
+	/* for ai */
+	ai_setupfield(&m_Collision);
 
 	// get flag positions
 	for(int i = 0; i < m_Collision.GetWidth() * m_Collision.GetHeight(); i++)

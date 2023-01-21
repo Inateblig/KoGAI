@@ -573,7 +573,7 @@ void CCharacter::PreTick()
 void CCharacter::Tick()
 {
 	/* for ai */
-	if (m_ID == ai_CID) {
+	if (m_ID == ai_CID && !g_Config.m_ClIgnoreAI) {
 		if (ai_getinp())
 			OnPredictedInput(&ai_inp);
 	}
@@ -593,7 +593,7 @@ void CCharacter::Tick()
 	DDRacePostCoreTick();
 
 	/* for ai */
-	if (m_ID == ai_CID) {
+	if (m_ID == ai_CID && !g_Config.m_ClIgnoreAI) {
 		ai_reply(this, GameWorld()->GameTick());
 	}
 

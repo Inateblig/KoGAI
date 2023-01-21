@@ -444,3 +444,10 @@ MACRO_CONFIG_INT(GfxRenderThreadCount, gfx_render_thread_count, 3, 0, 0, CFGFLAG
 MACRO_CONFIG_INT(GfxDriverIsBlocked, gfx_driver_is_blocked, 0, 0, 1, CFGFLAG_SAVE | CFGFLAG_CLIENT, "If 1, the current driver is in a blocked error state.")
 
 MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG_SAVE | CFGFLAG_CLIENT, "At which FPS the videorecorder should record demos.")
+
+/* for ai */
+MACRO_CONFIG_COL(ClAIDirVColor, cl_ai_dirv_color, 6401973, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of AI direciton vector.")
+MACRO_CONFIG_COL(ClAIFieldVColor, cl_ai_fieldv, 16777087, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Specifies the color of AI field vectors.")
+MACRO_CONFIG_INT(ClAIVAlpha, cl_ai_vectors_alpha, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alpha of the AI direction vector (0 invisible, 100 fully visible).")
+MACRO_CONFIG_INT(ClAIDirVLnWidth, cl_ai_dirv_line_width, 5, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Width of the AI direction vector")
+MACRO_CONFIG_INT(ClIgnoreAI, cl_ignore_ai, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Whether to ignore inp from the AI(1) or from the user(0)")
