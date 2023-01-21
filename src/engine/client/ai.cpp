@@ -119,13 +119,13 @@ ai_reply(CCharacter *ch, int tick)
 	gettiledist(htds, NELM(htds), cln, pos, TILE_SOLID);
 	gettiledist(ftds, NELM(ftds), cln, pos, TILE_FREEZE);
 
-	fprintf(outfifo, V2F " " V2F " %d %d",
-		V2A(vel), V2A(hp), hs, j);
+	vec2 pathv = ai_getfield(pos.x / 32, pos.y / 32);
+//	printf("pathv.x: %f, pathv.y: %f\n", pathv.x, pathv.y);
+
+	fprintf(outfifo, V2F " " V2F " " V2F " %d %d",
+		V2A(vel), V2A(hp), V2A(pathv), hs, j);
 	for (i = 0; i < NELM(rwdtiles); i++)
 		fprintf(outfifo, " %d", rwdtiles[i].rwd);
-//	for (i = 0; i < NELM(rwdtiles); i++)
-//		printf("%d ", rwdtiles[i].rwd);
-//	printf("\n");
 	for (i = 0; i < NELM(htds); i++)
 		fprintf(outfifo, " %a", htds[i]);
 	for (i = 0; i < NELM(ftds); i++)
@@ -201,7 +201,7 @@ ai_setupfield(CCollision *cln)
 			if (cln->GetTileIndex(i) == TILE_FINISH) {
 				tv.p.y = y;
 				tilevs.insert(tv);
-				printf("finish_t: %d, %d\n", tv.p.x, tv.p.y);
+//				printf("finish_t: %d, %d\n", tv.p.x, tv.p.y);
 				bd[i] = 0.f;
 			} else
 				bd[i] = HUGE_VALF;
@@ -211,7 +211,7 @@ ai_setupfield(CCollision *cln)
 	while (tilevs.size()) {
 		auto const ctv = tilevs.begin();
 
-		printf("ctv: %f, (%d, %d)\n", ctv->d, ctv->p.x, ctv->p.y);
+//		printf("ctv: %f, (%d, %d)\n", ctv->d, ctv->p.x, ctv->p.y);
 		for (dx = -1; dx <= 1; dx++)
 		for (dy = -1; dy <= 1; dy++) {
 			if (!dx && !dy)

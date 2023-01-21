@@ -1,6 +1,6 @@
 #!/bin/sh
 
-n=2
+n=20
 fd=fifos
 dd=.
 aid=AIenv
@@ -10,7 +10,7 @@ cd ..
 for i in $(seq $n)
 do
 	$dd/build/DDNet-AI -f $dd/settings_KoG.cfg -F $fd/fin$i $fd/fout$i &
-done > svlog
+done > clientlog
 
 python3 $aid/ai.py $(
 	for i in $(seq $n)
