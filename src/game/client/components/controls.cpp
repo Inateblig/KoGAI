@@ -337,7 +337,6 @@ int CControls::SnapInput(int *pData)
 		}
 	}
 
-
 	// copy and return size
 	m_aLastData[g_Config.m_ClDummy] = m_aInputData[g_Config.m_ClDummy];
 

@@ -55,7 +55,6 @@ ckinp:
 		&ai_inp.m_Jump,
 		&ai_inp.m_Hook,
 		&tsk);
-//	printf("inpbuf %s", inpbuf);
 	ai_wantskill |= tsk;
 	haveread = 1;
 	ai_gaveinp = 1;
@@ -73,6 +72,7 @@ ai_reply(CCharacter *ch, int tick)
 
 	if (!ai_waitsreply)
 		return;
+	ai_waitsreply = 0;
 
 	core = ch->GetCore();
 	cln = core.Collision();
@@ -82,12 +82,6 @@ ai_reply(CCharacter *ch, int tick)
 	vel = core.m_Vel;
 	hs = core.m_HookState;
 	j = core.m_Jumps & 3;
-
-	if (tick <= ai_killtick + 10) {
-		if (ai_gotrwd[0])
-			memset(ai_gotrwd, 0, sizeof ai_gotrwd);
-		return;
-	}
 
 	struct rwdtile {
 		int tf, tl; /* tile first, tile last */
@@ -107,17 +101,22 @@ ai_reply(CCharacter *ch, int tick)
 		(rt->tl && (t = cln->MovedThruRange(ppos, pos, rt->tf, rt->tl)) >= 0 && !ai_gotrwd[t])) {
 			if (t < TILE_TIME_CHECKPOINT_FIRST) {
 				rt->rwd = 1;
-//				printf("rt->rwd = %d\n", rt->rwd);
 			} else {
 				rt->rwd = t - TILE_TIME_CHECKPOINT_FIRST + 1;
-//				printf("rt->rwd = %d\n", rt->rwd);
 			}
 			ai_gotrwd[t] = 1;
 			if (t == TILE_FREEZE) {
 				ai_killtick = tick;
-				ai_gotrwd[0] = 1;
 			}
 		}
+	}
+
+	if (tick >= ai_killtick + 10)
+		ai_gotrwd[TILE_FREEZE] = 0;
+
+	if (cln->MovedThruTile(ppos, pos, ENTITY_OFFSET + ENTITY_SPAWN) >= 0 && tick <= ai_killtick + 10) {
+		memset(ai_gotrwd, 0, sizeof ai_gotrwd);
+		ai_killtick = 0;
 	}
 
 	float htds[ai_NRAYS], ftds[ai_NRAYS]; /* hookable/freeze tiles distatnce-s */
@@ -125,7 +124,6 @@ ai_reply(CCharacter *ch, int tick)
 	gettiledist(ftds, NELM(ftds), cln, pos, TILE_FREEZE);
 
 	vec2 pathv = ai_getfield(pos.x / 32, pos.y / 32);
-//	printf("pathv.x: %f, pathv.y: %f\n", pathv.x, pathv.y);
 
 	fprintf(outfifo, V2F " " V2F " " V2F " %d %d",
 		V2A(vel), V2A(hp), V2A(pathv), hs, j);
@@ -136,7 +134,6 @@ ai_reply(CCharacter *ch, int tick)
 	for (i = 0; i < NELM(ftds); i++)
 		fprintf(outfifo, " %a", ftds[i]);
 	fprintf(outfifo, "\n"); /* line-buffered */
-	ai_waitsreply = 0;
 }
 
 intern int fldw, fldh;
@@ -207,7 +204,6 @@ ai_setupfield(CCollision *cln)
 			if (cln->GetTileIndex(i) == TILE_FINISH) {
 				tv.p.y = y;
 				tilevs.insert(tv);
-//				printf("finish_t: %d, %d\n", tv.p.x, tv.p.y);
 				bd[i] = 0.f;
 			} else
 				bd[i] = HUGE_VALF;
@@ -217,7 +213,6 @@ ai_setupfield(CCollision *cln)
 	while (tilevs.size()) {
 		auto const ctv = tilevs.begin();
 
-//		printf("ctv: %f, (%d, %d)\n", ctv->d, ctv->p.x, ctv->p.y);
 		for (dx = -1; dx <= 1; dx++)
 		for (dy = -1; dy <= 1; dy++) {
 			if (!dx && !dy)
