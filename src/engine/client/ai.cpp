@@ -73,7 +73,6 @@ ai_reply(CCharacter *ch, int tick)
 
 	if (!ai_waitsreply)
 		return;
-	ai_waitsreply = 0;
 
 	core = ch->GetCore();
 	cln = core.Collision();
@@ -84,6 +83,12 @@ ai_reply(CCharacter *ch, int tick)
 	hs = core.m_HookState;
 	j = core.m_Jumps & 3;
 
+	if (tick <= ai_killtick + 10) {
+		if (ai_gotrwd[0])
+			memset(ai_gotrwd, 0, sizeof ai_gotrwd);
+		return;
+	}
+
 	struct rwdtile {
 		int tf, tl; /* tile first, tile last */
 		int rwd;
@@ -93,8 +98,6 @@ ai_reply(CCharacter *ch, int tick)
 		{ TILE_FINISH },
 		{ TILE_TIME_CHECKPOINT_FIRST, TILE_TIME_CHECKPOINT_LAST },
 	};
-	if (ai_gotrwd[TILE_FREEZE] && ai_killtick + 10 <= tick)
-		ai_gotrwd[TILE_FREEZE] = 0;
 	for (i = 0; i < NELM(rwdtiles); i++) {
 		struct rwdtile *rt;
 		int t;
@@ -109,9 +112,11 @@ ai_reply(CCharacter *ch, int tick)
 				rt->rwd = t - TILE_TIME_CHECKPOINT_FIRST + 1;
 //				printf("rt->rwd = %d\n", rt->rwd);
 			}
-				ai_gotrwd[t] = 1;
-			if (t == TILE_FREEZE)
+			ai_gotrwd[t] = 1;
+			if (t == TILE_FREEZE) {
 				ai_killtick = tick;
+				ai_gotrwd[0] = 1;
+			}
 		}
 	}
 
@@ -131,6 +136,7 @@ ai_reply(CCharacter *ch, int tick)
 	for (i = 0; i < NELM(ftds); i++)
 		fprintf(outfifo, " %a", ftds[i]);
 	fprintf(outfifo, "\n"); /* line-buffered */
+	ai_waitsreply = 0;
 }
 
 intern int fldw, fldh;

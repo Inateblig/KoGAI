@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-freezew = -1
+freezew = -0.05
 startw = 0.7
 finishw = 10.0
 speedw = 0.0001
@@ -21,12 +21,10 @@ nrays = 3
 totalrays = nrays * 2
 
 iters = 4
-#nstp = 2048 * 2
-#bs = 2048 * 2
-nstp = 1024
-bs = 1024
+nstp = 2048 * 8
+bs = 2048 * 8
 lr = 0.005
-ContinueTraining = True
+ContinueTraining = False
 
 models_dir = "models/"
 logdir= "logs/"
