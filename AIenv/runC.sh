@@ -3,7 +3,7 @@
 n=15
 fd=fifos
 dd=.
-sd=/content/drive/MyDrive/KoGAI/
+sd=/content/drive/MyDrive/KoGAI
 aid=AIenv
 
 cd ..
