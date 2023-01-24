@@ -3,8 +3,9 @@
 #include <game/generated/protocol.h>
 #include <game/client/prediction/entities/character.h>
 
-#define ai_NRAYS 3
+#define ai_NRAYS 8
 #define ai_RAYLEN (32 * 16)
+#define ai_ASZ 1
 
 //#define ai_AREADIM (g_Config.m_ClAreaSize)
 
@@ -20,4 +21,5 @@ int ai_getinp();
 void ai_reply(CCharacter *ch, int tick);
 void ai_setupfield(CCollision *cln);
 vec2 ai_getfield(FPARS(int, x, y));
+vec2 ai_getareafld(FPARS(int, x, y, asz));
 #endif

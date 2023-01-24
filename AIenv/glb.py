@@ -1,12 +1,12 @@
 import os
 from datetime import datetime
 
-freezew = -0.05
+freezew = -0.07
 startw = 0.7
 finishw = 10.0
 speedw = 0.0001
 jumpw = -0.01
-ckpntw = 0.7
+ckpntw = 0.25
 hookw = 0.0015
 shorthookw = -0.01
 timealivew = 0.00
@@ -17,12 +17,12 @@ mintimealive = 1 / env_speed
 
 totalrwd = 0
 
-nrays = 3
+nrays = 8
 totalrays = nrays * 2
 
-iters = 4
-nstp = 2048 * 8
-bs = 2048 * 8
+iters = 8
+nstp = 2048
+bs = 1024
 lr = 0.005
 ContinueTraining = False
 
@@ -33,8 +33,8 @@ stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 loadfrom = 0
 
 if ContinueTraining:
-	stamp = "20230122_004934" #used for overwriting the previous declared stamp for loading
-	loadfrom = 1 #used for continuing training
+	stamp = "8rays" #used for overwriting the previous declared stamp for loading
+	loadfrom = 49 #used for continuing training
 
 f = open(os.open("/tmp/kogai_timestamp", os.O_RDWR|os.O_CREAT, 0o600), 'r+')
 try:

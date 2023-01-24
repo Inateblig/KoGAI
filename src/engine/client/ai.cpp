@@ -152,7 +152,7 @@ struct TileV {
 intern int
 issolid(int t)
 {
-	return t == TILE_SOLID || t == TILE_NOHOOK;
+	return t == TILE_SOLID || t == TILE_NOHOOK || t == TILE_FREEZE;
 }
 
 intern int
@@ -260,4 +260,28 @@ ai_getfield(FPARS(int, x, y))
 	dir.x = v % 3 - 1;
 	dir.y = v / 3 - 1;
 	return dir;
+}
+
+vec2
+ai_getareafld(FPARS(int, x, y, asz))
+{
+	vec2 af;
+	int dx, dy, n;
+
+	n = 0;
+	for (dx = -asz; dx <= asz; dx++)
+	for (dy = -asz; dy <= asz; dy++) {
+		vec2 v = ai_getfield(x + dx, y + dy);
+		if (!v.x && !v.y) {
+			if (!dx && !dy)
+				goto retnone;
+			continue;
+		}
+		af += v;
+		n++;
+	}
+	if (!n)
+retnone:
+		return vec2(0.f, 0.f);
+	return af / n;
 }

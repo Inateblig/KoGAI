@@ -1116,7 +1116,7 @@ void CRenderTools::RenderAITileV(CTile *pTiles, int w, int h, float Scale, Color
 			pos.y = y * 32.f + 16.f;
 			if (x < 0 || y < 0)
 				continue;
-			dir = ai_getfield(x, y) * 15;
+			dir = ai_getareafld(x, y, ai_ASZ) * 15;
 			if (!dir.x && !dir.y)
 				continue;
 			drawfatline(Graphics(), pos, pos + dir, width);
