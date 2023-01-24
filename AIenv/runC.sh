@@ -1,6 +1,6 @@
 #!/bin/sh
 
-n=7
+n=3
 fd=fifos
 dd=.
 sd=/content/drive/MyDrive/KoGAI
