@@ -36,6 +36,11 @@ class CPlayers : public CComponent
 		const CNetObj_Character *pPlayerChar,
 		int ClientID,
 		float Intra = 0.f);
+	void RenderAIRays(
+		const CNetObj_Character *pPrevChar,
+		const CNetObj_Character *pPlayerChar,
+		int ClientID,
+		float Intra = 0.f);
 	float GetPlayerTargetAngle(
 		const CNetObj_Character *pPrevChar,
 		const CNetObj_Character *pPlayerChar,

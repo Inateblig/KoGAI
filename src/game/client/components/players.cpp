@@ -858,6 +858,7 @@ void CPlayers::OnRender()
 	if(LocalClientID != -1 && m_pClient->m_Snap.m_aCharacters[LocalClientID].m_Active && IsPlayerInfoAvailable(LocalClientID))
 	{
 		const CGameClient::CClientData *pLocalClientData = &m_pClient->m_aClients[LocalClientID];
+		RenderAIRays(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, LocalClientID);
 		RenderHookCollLine(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, LocalClientID);
 		RenderAIDirV(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, LocalClientID);
 		RenderPlayer(&pLocalClientData->m_RenderPrev, &pLocalClientData->m_RenderCur, &m_aRenderInfo[LocalClientID], LocalClientID);
@@ -982,11 +983,60 @@ void CPlayers::RenderAIDirV(
 	pos = m_pClient->m_aClients[ClientID].m_RenderPos;
 	width = 0.5f + (float)(g_Config.m_ClAIDirVLnWidth - 1) * 0.25f;
 //	printf("pos.x: %f, pos.y: %f\n", pos.x, pos.y);
-	dir = ai_getfield(pos.x / 32, pos.y / 32) * 32 * 2;
+	dir = ai_getareafld(pos.x / 32, pos.y / 32, ai_ASZ) * 32 * 2;
 	dir.x += pos.x;
 	dir.y += pos.y;
 
 	drawfatline(Graphics(), pos, dir, width);
+
+	Graphics()->QuadsEnd();
+}
+
+
+void CPlayers::RenderAIRays(
+	const CNetObj_Character *pPrevChar,
+	const CNetObj_Character *pPlayerChar,
+	int ClientID,
+	float Intra)
+{
+
+	ColorRGBA FreezeCollColor, HookableCollColor;
+	vec2 e, c, p;
+	float a, sc, width, RayAlpha = 1.0f;
+	int i;
+
+	p = m_pClient->m_aClients[ClientID].m_RenderPos;
+
+	Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+
+	FreezeCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorTeeColl));
+	HookableCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorHookableColl));
+	RayAlpha *= (float)g_Config.m_ClHookCollAlpha / 100;
+
+	Graphics()->SetColor(FreezeCollColor.WithAlpha(RayAlpha));
+	for (i = 0; i < ai_NRAYS; i++) {
+
+		sc = ai_ftds[i] >= 0 ? ai_ftds[i] : 1;
+//		sc = 1;
+
+		a = i * 2*pi / ai_NRAYS;
+		e = p + vec2(sinf(a), -cosf(a)) * (sc * ai_RAYLEN);
+		width = 4.5f + (float)(g_Config.m_ClHookCollSize - 1) * 0.25f;
+		drawfatline(Graphics(), p, e, width);
+	}
+
+	Graphics()->SetColor(HookableCollColor.WithAlpha(RayAlpha));
+	for (i = 0; i < ai_NRAYS; i++) {
+
+		sc = ai_htds[i] >= 0 ? ai_htds[i] : 1;
+//		sc = 1;
+
+		a = i * 2*pi / ai_NRAYS;
+		e = p + vec2(sinf(a), -cosf(a)) * (sc * ai_RAYLEN);
+		width = 1.5f + (float)(g_Config.m_ClHookCollSize - 1) * 0.25f;
+		drawfatline(Graphics(), p, e, width);
+	}
 
 	Graphics()->QuadsEnd();
 }

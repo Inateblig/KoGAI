@@ -20,10 +20,10 @@ totalrwd = 0
 nrays = 8
 totalrays = nrays * 2
 
-iters = 8
-nstp = 2048
-bs = 1024
-lr = 0.005
+iters = 16
+nstp = 16384
+bs = 2048
+lr = 0.0003
 ContinueTraining = False
 
 models_dir = "models/"

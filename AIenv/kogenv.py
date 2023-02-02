@@ -20,7 +20,6 @@ class Input:
 	hp = vec2() # hook pos
 	pathv = vec2() #pathfinding vector
 	hs = 0 # hook state
-	njum = 0
 
 def getinput(strnums):
 	i = iter(strnums)
@@ -34,7 +33,6 @@ def getinput(strnums):
 	inp.pathv.x = getn()
 	inp.pathv.y = getn()
 	inp.hs = getn()
-	inp.njum = getn()
 	return inp
 
 def fifowrite(fout, dir, tx, ty, j, h, sk, pr):
@@ -46,22 +44,22 @@ def fifowrite(fout, dir, tx, ty, j, h, sk, pr):
 
 def getobsinprwd(fin, retrwds):
 	inpstr = fin.readline().split()
-	inp = getinput(inpstr[0:8])
-	allrays = inpstr[12:]
+	inp = getinput(inpstr[0:7])
+	allrays = inpstr[11:]
 
 	obs = []
 	obs.extend([float.fromhex(x) for x in allrays])
 	obs.extend([inp.vel.x, inp.vel.y])
 	obs.extend([inp.hp.x, inp.hp.y])
 	obs.extend([inp.pathv.x, inp.pathv.y])
-	obs.extend([inp.hs, inp.njum])
+	obs.extend([inp.hs])
 
-	rwds = [int(i) for i in inpstr[8:12]] if retrwds else None
+	rwds = [int(i) for i in inpstr[7:11]] if retrwds else None
 	return obs, inp, rwds
 
 maxvel = 6000 / 32
 maxhooklen = 800 / 32
-firstobs = [0] * (glb.totalrays + 8)
+firstobs = [0] * (glb.totalrays + 7)
 
 #alow = np.array([-1, -1, 0, 0])
 #ahigh = np.array([1, 1, 0, 1])
@@ -71,14 +69,14 @@ ahigh = np.array([1, 1, 1])
 olow = np.array([-1] * glb.totalrays + \
 	[-maxvel, -maxvel, \
 	-maxhooklen, -maxhooklen, \
-	0, 0, \
+	0,\
 	-1, -1 \
 #	0, 0 \
 	])
 ohigh = np.array([1] * glb.totalrays + \
 	[maxvel, maxvel, \
 	maxhooklen, maxhooklen, \
-	7, 3, \
+	7,\
 	1, 1 \
 #	7, 3 \
 	])

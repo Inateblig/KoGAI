@@ -5,6 +5,7 @@
 #include <game/generated/client_data.h>
 #include <game/mapitems.h>
 #include <engine/client/ai.h>
+#include <game/client/ray.h>
 
 #include "character.h"
 #include "laser.h"
@@ -570,6 +571,7 @@ void CCharacter::PreTick()
 	m_Core.Tick(true, !m_pGameWorld->m_WorldConfig.m_NoWeakHookAndBounce);
 }
 
+
 void CCharacter::Tick()
 {
 	/* for ai */
@@ -593,8 +595,14 @@ void CCharacter::Tick()
 	DDRacePostCoreTick();
 
 	/* for ai */
-	if (m_ID == ai_CID && !g_Config.m_ClIgnoreAI) {
-		ai_reply(this, GameWorld()->GameTick());
+//	if (m_ID == ai_CID && !g_Config.m_ClIgnoreAI) {
+	if (m_ID == ai_CID) {
+		if (!g_Config.m_ClIgnoreAI)
+			ai_reply(this, GameWorld()->GameTick());
+		else {
+			gettiledist(ai_htds, NELM(ai_htds), Collision(), m_Pos, TILE_SOLID);
+			gettiledist(ai_ftds, NELM(ai_ftds), Collision(), m_Pos, TILE_FREEZE);
+		}
 	}
 
 	// Previnput

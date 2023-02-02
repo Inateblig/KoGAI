@@ -1359,40 +1359,43 @@ getpntisn(ivec2 *isn, float *sc, FPARS(vec2, pv, dv), const int in[2])
 }
 
 int
-CCollision::gettile(ivec2 *p)
+CCollision::gettile(ivec2 p)
 {
-	int x, y;
-
 	if (!m_pTiles)
 		return 0;
+	if (p.x < 0 || p.x >= m_Width ||
+	    p.y < 0 || p.y >= m_Height)
+		return 0;
 
-	x = clamp(p->x, 0, m_Width - 1);
-	y = clamp(p->y, 0, m_Height - 1);
-	return m_pTiles[y*m_Width + x].m_Index;
+	return m_pTiles[p.y*m_Width + p.x].m_Index;
 }
 
 int
 CCollision::IntersectLineTile(float *tsc, FPARS(vec2, p, d), int tile)
 {
-	vec2 v2;
+	vec2 v, od, op;
 	ivec2 tp;
-	float sc;
+	float sc, l;
 	int in[2] = {1, 1};
 	int ii;
 
-	tp = ivec2(p.x / 32.f, p.y / 32.f);
-	d = d / 32.f;
+	p /= 32.f;
+	d /= 32.f;
+	op = p, od = d;
+	tp = ivec2(p.x, p.y);
 	*tsc = 0.f;
 	do {
 //		if ((t = (*matches)(gettile(&tp, arg)) >= 0)
-		if (gettile(&tp) == tile)
+		if (gettile(tp) == tile) {
+			if ((l = length(od)))
+				*tsc = length(p - op) / l;
 			return 1;
+		}
 		if ((ii = getpntisn(&tp, &sc, p, d, in)) < 0)
 			break;
 		in[ii] = (&d.x)[ii] > 0.f;
-		p += (v2 = d * sc);
-		d -= v2;
-		*tsc += sc;
+		p += v = d * sc;
+		d -= v;
 	} while (1);
 	return 0;
 }

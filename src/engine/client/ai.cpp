@@ -26,6 +26,7 @@ int ai_CID;
 int ai_killtick;
 int ai_waitsreply;
 bool ai_gotrwd[256];
+float ai_htds[ai_NRAYS], ai_ftds[ai_NRAYS];
 
 int
 ai_getinp(void)
@@ -68,7 +69,7 @@ ai_reply(CCharacter *ch, int tick)
 	CCollision *cln;
 	vec2 ppos, pos, hp, vel;
 	size_t i;
-	int hs, j;
+	int hs;
 
 	if (!ai_waitsreply)
 		return;
@@ -81,7 +82,6 @@ ai_reply(CCharacter *ch, int tick)
 	hp = core.m_HookPos - pos;
 	vel = core.m_Vel;
 	hs = core.m_HookState;
-	j = core.m_Jumps & 3;
 
 	struct rwdtile {
 		int tf, tl; /* tile first, tile last */
@@ -119,20 +119,20 @@ ai_reply(CCharacter *ch, int tick)
 		ai_killtick = 0;
 	}
 
-	float htds[ai_NRAYS], ftds[ai_NRAYS]; /* hookable/freeze tiles distatnce-s */
-	gettiledist(htds, NELM(htds), cln, pos, TILE_SOLID);
-	gettiledist(ftds, NELM(ftds), cln, pos, TILE_FREEZE);
+//	float htds[ai_NRAYS], ftds[ai_NRAYS]; /* hookable/freeze tiles distatnce-s */
+	gettiledist(ai_htds, NELM(ai_htds), cln, pos, TILE_SOLID);
+	gettiledist(ai_ftds, NELM(ai_ftds), cln, pos, TILE_FREEZE);
 
-	vec2 pathv = ai_getfield(pos.x / 32, pos.y / 32);
+	vec2 pathv = ai_getareafld(pos.x / 32, pos.y / 32, ai_ASZ);
 
-	fprintf(outfifo, V2F " " V2F " " V2F " %d %d",
-		V2A(vel), V2A(hp), V2A(pathv), hs, j);
+	fprintf(outfifo, V2F " " V2F " " V2F " %d",
+		V2A(vel), V2A(hp), V2A(pathv), hs);
 	for (i = 0; i < NELM(rwdtiles); i++)
 		fprintf(outfifo, " %d", rwdtiles[i].rwd);
-	for (i = 0; i < NELM(htds); i++)
-		fprintf(outfifo, " %a", htds[i]);
-	for (i = 0; i < NELM(ftds); i++)
-		fprintf(outfifo, " %a", ftds[i]);
+	for (i = 0; i < NELM(ai_htds); i++)
+		fprintf(outfifo, " %a", ai_htds[i]);
+	for (i = 0; i < NELM(ai_ftds); i++)
+		fprintf(outfifo, " %a", ai_ftds[i]);
 	fprintf(outfifo, "\n"); /* line-buffered */
 }
 
