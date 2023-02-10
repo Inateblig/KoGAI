@@ -20,16 +20,17 @@
 #define V2A(V) (int)(V).x, (int)(V).y
 
 CNetObj_PlayerInput ai_inp;
+float ai_htds[ai_NRAYS], ai_ftds[ai_NRAYS];
 int ai_wantskill;
 int ai_gaveinp;
 int ai_CID;
 int ai_killtick;
 int ai_waitsreply;
+int ai_rinp_tick, ai_reply_tick;
 bool ai_gotrwd[256];
-float ai_htds[ai_NRAYS], ai_ftds[ai_NRAYS];
 
 int
-ai_getinp(void)
+ai_getinp(int tick)
 {
 	struct pollfd pfd;
 	int haveread, tsk;
@@ -47,6 +48,7 @@ ckinp:
 		return haveread;
 	}
 
+	ai_rinp_tick = tick;
 	if (!(fgets(inpbuf, sizeof inpbuf, infifo)))
 		ferrn("fgets");
 	sscanf(inpbuf, "%d %d %d %d %d %d",
@@ -74,6 +76,7 @@ ai_reply(CCharacter *ch, int tick)
 	if (!ai_waitsreply)
 		return;
 	ai_waitsreply = 0;
+	ai_reply_tick = tick;
 
 	core = ch->GetCore();
 	cln = core.Collision();
@@ -90,7 +93,7 @@ ai_reply(CCharacter *ch, int tick)
 		{ TILE_FREEZE },
 		{ TILE_START },
 		{ TILE_FINISH },
-		{ TILE_TIME_CHECKPOINT_FIRST, TILE_TIME_CHECKPOINT_LAST },
+//		{ TILE_TIME_CHECKPOINT_FIRST, TILE_TIME_CHECKPOINT_LAST },
 	};
 	for (i = 0; i < NELM(rwdtiles); i++) {
 		struct rwdtile *rt;
@@ -124,11 +127,14 @@ ai_reply(CCharacter *ch, int tick)
 	gettiledist(ai_ftds, NELM(ai_ftds), cln, pos, TILE_FREEZE);
 
 	vec2 pathv = ai_getareafld(pos.x / 32, pos.y / 32, ai_ASZ);
+	/* correct path reward */
+	int rwdcrctpath = dot(vel, pathv);
 
 	fprintf(outfifo, V2F " " V2F " " V2F " %d",
 		V2A(vel), V2A(hp), V2A(pathv), hs);
 	for (i = 0; i < NELM(rwdtiles); i++)
 		fprintf(outfifo, " %d", rwdtiles[i].rwd);
+	fprintf(outfifo, " %d", rwdcrctpath);
 	for (i = 0; i < NELM(ai_htds); i++)
 		fprintf(outfifo, " %a", ai_htds[i]);
 	for (i = 0; i < NELM(ai_ftds); i++)

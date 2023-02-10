@@ -1,12 +1,7 @@
 import os
 from sys import argv
-import itertools
-import numpy as np
 import glb
-import time
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack, VecNormalize
-from array import array
+from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3 import PPO
 import kogenv
 
@@ -51,23 +46,22 @@ if __name__ == '__main__':
 			learning_rate = lr, n_steps=nstp, batch_size = bs)
 		print(model.policy)
 
-		model.learn(total_timesteps=TOTALTIMESTEPS)
+		model.learn(total_timesteps=TOTALTIMESTEPS, progress_bar=True)
 		model.save(f"{models_dir}/model0")
 		print("modeldone 0")
 
 
 #	Train loop
 	for i in range(glb.loadfrom,200):
-		model = PPO.load(f"{models_dir}/model{i}", print_system_info=True)
+		model = PPO.load(f"{models_dir}/model{i}", print_system_info=True, env=env)
 		model.set_env(env)
 
-		model.learn(total_timesteps=TOTALTIMESTEPS, reset_num_timesteps=False)
+		model.learn(total_timesteps=TOTALTIMESTEPS, reset_num_timesteps=False, progress_bar=True)
 		model.save(f"{models_dir}/model{i+1}")
 		print("modeldone", i + 1)
 
 #	Load fromm here
-#	model = PPO.load(f"{models_dir}/model{glb.loadfrom}", print_system_info=True)
-#	model.set_env(env)
+#	model = PPO.load(f"{models_dir}/model{glb.loadfrom}", print_system_info=True, env=env)
 #	obs = env.reset()
 #	while True:
 #		action, _state = model.predict(obs)

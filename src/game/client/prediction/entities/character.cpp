@@ -574,9 +574,20 @@ void CCharacter::PreTick()
 
 void CCharacter::Tick()
 {
+	static int lasttick;
+	int tick;
+
 	/* for ai */
-	if (m_ID == ai_CID && !g_Config.m_ClIgnoreAI) {
-		if (ai_getinp())
+	if (m_ID != ai_CID)
+		return;
+
+	tick = GameWorld()->GameTick();
+	if (lasttick == tick)
+		return;
+	lasttick = tick;
+
+	if (!g_Config.m_ClIgnoreAI && ai_rinp_tick != tick) {
+		if (ai_getinp(tick))
 			OnPredictedInput(&ai_inp);
 	}
 
@@ -595,10 +606,9 @@ void CCharacter::Tick()
 	DDRacePostCoreTick();
 
 	/* for ai */
-//	if (m_ID == ai_CID && !g_Config.m_ClIgnoreAI) {
-	if (m_ID == ai_CID) {
+	if (ai_reply_tick != tick) {
 		if (!g_Config.m_ClIgnoreAI)
-			ai_reply(this, GameWorld()->GameTick());
+			ai_reply(this, tick);
 		else {
 			gettiledist(ai_htds, NELM(ai_htds), Collision(), m_Pos, TILE_SOLID);
 			gettiledist(ai_ftds, NELM(ai_ftds), Collision(), m_Pos, TILE_FREEZE);

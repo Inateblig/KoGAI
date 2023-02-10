@@ -1,11 +1,9 @@
-import os
 import numpy as np
 import gym
 import glb
 import math
 from gym import spaces
 from time import time
-from stable_baselines3.common.callbacks import BaseCallback
 import tensorflow as tf
 
 class vec2:
@@ -102,14 +100,11 @@ class KoGEnv(gym.Env):
 		self.hasfinished = False
 		self.spdthres = 13
 		self.isdone = False
-		self.rwdspeed = 0
 		self.rwdfreeze = 0
 		self.rwdstart = 0
 		self.rwdfinish = 0
-		self.rwdjump = 0
-		self.rwdckpnt = 0
 		self.rwdhook = 0
-		self.rwdtimealive = 0
+		self.rwdcrctpath = 0
 		self.totalrwd = 0
 		self.prevrwd = 0
 		self.hook_time = 0
@@ -125,8 +120,6 @@ class KoGEnv(gym.Env):
 		tx = int(math.sin(actn[1] * math.pi) * ms_distance)
 		ty = int(-math.cos(actn[1] * math.pi) * ms_distance)
 #		print(f"{tx:05.03f}\t{ty:05.03f}")
-		jump = 0
-#		jump = int(actn[2] * 2)
 		hook = int(actn[2] * 2)
 
 		if hook == 1:
@@ -141,7 +134,7 @@ class KoGEnv(gym.Env):
 				self.rwdhook += glb.shorthookw
 
 #		print(f"{self.n}: {self.i}: writing(1)...")
-		fifowrite(self.fout, dir, tx, ty, jump, hook, 0, False)
+		fifowrite(self.fout, dir, tx, ty, 0, hook, 0, False)
 #		print(f"{self.n} r{self.i}: reading(1)...")
 		obs, inp, rwds = getobsinprwd(self.fin, True)
 #		print(f"{self.n}: {self.i} done")
@@ -158,40 +151,27 @@ class KoGEnv(gym.Env):
 			self.hasfinished = True
 #			print("finish", rwdfinish, "self.i", self.i)
 			self.isdone = True
-		if rwds[3] >= 1:
-			self.rwdckpnt += glb.finishw * rwds[3] /25
+		self.rwdcrctpath += rwds[3] * glb.crctpathw
 
-		if (abs(math.sqrt(inp.vel.x**2 + inp.vel.y**2))) >= self.spdthres:
-			self.rwdspeed += glb.speedw
-		else:
-			self.rwdspeed += -glb.speedw * 0.5
-		if jump > 0:
-			self.rwdjump += glb.jumpw
-
-		if self.time_alive > glb.mintimealive:
-			self.rwdtimealive += glb.timealivew #* max(1, self.time_alive)
-
-		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + self.rwdspeed + \
-			self.rwdjump + self.rwdckpnt + self.rwdhook + self.rwdtimealive
+		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + \
+			self.rwdhook + self.rwdcrctpath
 		reward = self.totalrwd - self.prevrwd
 		self.prevrwd = self.totalrwd
 
 		self.time_alive = time() - self.reset_time
-		if self.n % 500 == 0:
+		if self.n % 5000 == 0:
 			with self.file_writer.as_default():
 				tf.summary.scalar("info/time_alive", data=self.time_alive, step=self.n)
-				tf.summary.scalar("individual_rewards/time_alive", data=self.rwdtimealive, step=self.n)
 				tf.summary.scalar("individual_rewards/freeze", data=self.rwdfreeze, step=self.n)
 				tf.summary.scalar("individual_rewards/start", data=self.rwdstart, step=self.n)
 				tf.summary.scalar("individual_rewards/finish", data=self.rwdfinish, step=self.n)
-				tf.summary.scalar("individual_rewards/speed", data=self.rwdspeed, step=self.n)
-				tf.summary.scalar("individual_rewards/jump", data=self.rwdjump, step=self.n)
-				tf.summary.scalar("individual_rewards/ckpnt", data=self.rwdckpnt, step=self.n)
 				tf.summary.scalar("individual_rewards/hook", data=self.rwdhook, step=self.n)
+				tf.summary.scalar("individual_rewards/correct_path", data=self.rwdcrctpath, step=self.n)
 				tf.summary.scalar("total_rewards/reward_sum", data=self.prevrwd, step=self.n)
 				tf.summary.scalar("total_rewards/reward", data=reward, step=self.n)
+				tf.summary.scalar("total_rewards/correct_path", data=rwds[3] * glb.crctpathw, step=self.n)
 
-		print(f"{self.n:6}\r", end = '')
+#		print(f"{self.n:6}\r", end = '')
 		if self.n % glb.nstp == 0 and self.n != 0:
 #			print(f"{self.n}: {self.i}: writing(2)...")
 			fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
