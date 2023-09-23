@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
 	if not glb.ContinueTraining:
 		model = PPO('MlpPolicy', env, verbose=2, tensorboard_log=logdir,
-			learning_rate = lr, n_steps=nstp, batch_size = bs)
+			learning_rate=lr, n_steps=nstp, batch_size=bs, device='cuda')
 		print(model.policy)
 
 		model.learn(total_timesteps=TOTALTIMESTEPS, progress_bar=True)

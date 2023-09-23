@@ -3,7 +3,6 @@ import gym
 import glb
 import math
 from gym import spaces
-from time import time
 import tensorflow as tf
 
 class vec2:
@@ -21,16 +20,18 @@ class Input:
 
 def getinput(strnums):
 	i = iter(strnums)
-	def getn():
+	def getni():
 		return int(next(i))
+	def getnf():
+		return float.fromhex(next(i))
 	inp = Input()
-	inp.vel.x = getn() / 32
-	inp.vel.y = getn() / 32
-	inp.hp.x = getn() / 32
-	inp.hp.y = getn() / 32
-	inp.pathv.x = getn()
-	inp.pathv.y = getn()
-	inp.hs = getn()
+	inp.vel.x = getnf()
+	inp.vel.y = getnf()
+	inp.hp.x = getnf()
+	inp.hp.y = getnf()
+	inp.pathv.x = getnf()
+	inp.pathv.y = getnf()
+	inp.hs = getnf()
 	return inp
 
 def fifowrite(fout, dir, tx, ty, j, h, sk, pr):
@@ -52,12 +53,12 @@ def getobsinprwd(fin, retrwds):
 	obs.extend([inp.pathv.x, inp.pathv.y])
 	obs.extend([inp.hs])
 
-	rwds = [int(i) for i in inpstr[7:11]] if retrwds else None
+	if retrwds:
+		rwds = [int(i) for i in inpstr[7:10]]
+		rwds.append(float.fromhex(inpstr[10]))
+	else:
+		rwds = None
 	return obs, inp, rwds
-
-maxvel = 6000 / 32
-maxhooklen = 800 / 32
-firstobs = [0] * (glb.totalrays + 7)
 
 #alow = np.array([-1, -1, 0, 0])
 #ahigh = np.array([1, 1, 0, 1])
@@ -65,19 +66,15 @@ alow = np.array([-1, -1, 0])
 ahigh = np.array([1, 1, 1])
 
 olow = np.array([-1] * glb.totalrays + \
-	[-maxvel, -maxvel, \
-	-maxhooklen, -maxhooklen, \
-	0,\
-	-1, -1 \
-#	0, 0 \
-	])
+	[-1, -1, \
+	-1, -1, \
+	-1, -1, \
+	0])
 ohigh = np.array([1] * glb.totalrays + \
-	[maxvel, maxvel, \
-	maxhooklen, maxhooklen, \
-	7,\
-	1, 1 \
-#	7, 3 \
-	])
+	[1, 1, \
+	1, 1, \
+	1, 1, \
+	1])
 
 class KoGEnv(gym.Env):
 	def __init__(self, id, fifofnms):
@@ -96,21 +93,17 @@ class KoGEnv(gym.Env):
 #		self.fin = open(glb.fifofnms[self.i][1], 'r')
 		self.file_writer = tf.summary.create_file_writer(glb.logdir + f"log_ai_rewards/Env{self.i + 1:02}")
 
-		self.hasstarted = False
-		self.hasfinished = False
 		self.spdthres = 13
 		self.isdone = False
 		self.rwdfreeze = 0
 		self.rwdstart = 0
 		self.rwdfinish = 0
-		self.rwdhook = 0
+#		self.rwdhook = 0
 		self.rwdcrctpath = 0
 		self.totalrwd = 0
 		self.prevrwd = 0
 		self.hook_time = 0
 		self.hookstarted = False
-		self.time_alive = 0
-		self.reset_time = 0
 
 	def step(self, actn):
 		info = {}
@@ -122,16 +115,16 @@ class KoGEnv(gym.Env):
 #		print(f"{tx:05.03f}\t{ty:05.03f}")
 		hook = int(actn[2] * 2)
 
-		if hook == 1:
-			self.rwdhook += glb.hookw
-			self.hookstarted = True
-			self.hook_time = time()
-		elif self.hookstarted:
-			self.hookstarted = False
-			newhook_time = time()
-			hook_dt = newhook_time - self.hook_time
-			if hook_dt < glb.minhooktime:
-				self.rwdhook += glb.shorthookw
+#		if hook == 1:
+#			self.rwdhook += glb.hookw
+#			self.hookstarted = True
+#			self.hook_time = time()
+#		elif self.hookstarted:
+#			self.hookstarted = False
+#			newhook_time = time()
+#			hook_dt = newhook_time - self.hook_time
+#			if hook_dt < glb.minhooktime:
+#				self.rwdhook += glb.shorthookw
 
 #		print(f"{self.n}: {self.i}: writing(1)...")
 		fifowrite(self.fout, dir, tx, ty, 0, hook, 0, False)
@@ -143,48 +136,41 @@ class KoGEnv(gym.Env):
 			self.rwdfreeze += glb.freezew
 #			print("donefreeze")
 			self.isdone = True
-		if rwds[1] == 1 and self.hasstarted == False:
-			self.rwdstart += glb.startw
-			self.hasstarted = True
-		if rwds[2] == 1 and self.hasfinished == False:
+#		if rwds[1] == 1:
+#			self.rwdstart += glb.startw
+		if rwds[2] == 1:
 			self.rwdfinish += glb.finishw
-			self.hasfinished = True
 #			print("finish", rwdfinish, "self.i", self.i)
 			self.isdone = True
 		self.rwdcrctpath += rwds[3] * glb.crctpathw
 
+
+#		print("pathv.x", obs[glb.totalrays + 4], "pathv.y", obs[glb.totalrays + 5])
 		self.totalrwd = self.rwdfreeze + self.rwdstart + self.rwdfinish + \
-			self.rwdhook + self.rwdcrctpath
+			self.rwdcrctpath
+			#self.rwdhook + self.rwdcrctpath
 		reward = self.totalrwd - self.prevrwd
 		self.prevrwd = self.totalrwd
+#		print(f" step: {rwds[3] * glb.crctpathw}, sum: {self.rwdcrctpath}, step_rwds: {reward}, rwds: {self.prevrwd}")
+#		print(f"obs: {obs}")
 
-		self.time_alive = time() - self.reset_time
+#		print(f"stp_rwd: {reward:10.7f}, sum_rwd: {self.prevrwd:10.7f}, ")
+
 		if self.n % 5000 == 0:
 			with self.file_writer.as_default():
-				tf.summary.scalar("info/time_alive", data=self.time_alive, step=self.n)
 				tf.summary.scalar("individual_rewards/freeze", data=self.rwdfreeze, step=self.n)
 				tf.summary.scalar("individual_rewards/start", data=self.rwdstart, step=self.n)
 				tf.summary.scalar("individual_rewards/finish", data=self.rwdfinish, step=self.n)
-				tf.summary.scalar("individual_rewards/hook", data=self.rwdhook, step=self.n)
+#				tf.summary.scalar("individual_rewards/hook", data=self.rwdhook, step=self.n)
 				tf.summary.scalar("individual_rewards/correct_path", data=self.rwdcrctpath, step=self.n)
 				tf.summary.scalar("total_rewards/reward_sum", data=self.prevrwd, step=self.n)
-				tf.summary.scalar("total_rewards/reward", data=reward, step=self.n)
-				tf.summary.scalar("total_rewards/correct_path", data=rwds[3] * glb.crctpathw, step=self.n)
+				tf.summary.scalar("step_rewards/reward", data=reward, step=self.n)
+				tf.summary.scalar("step_rewards/correct_path", data=rwds[3] * glb.crctpathw, step=self.n)
 
 #		print(f"{self.n:6}\r", end = '')
-		if self.n % glb.nstp == 0 and self.n != 0:
-#			print(f"{self.n}: {self.i}: writing(2)...")
-			fifowrite(self.fout, 0, 100, 0, 0, 0, 1, False)
-#			print(f"{self.n}: {self.i}: reading(2)...")
-			obs = getobsinprwd(self.fin, False)[0]
-#			print(f"{self.n}: {self.i}: done")
-			reward = 0
 
 		self.n += 1
-
 		done = self.isdone
-		glb.totalrwd = self.totalrwd
-
 		return np.array(obs), reward, done, info
 
 	def reset(self):
@@ -194,12 +180,8 @@ class KoGEnv(gym.Env):
 		obs = getobsinprwd(self.fin, False)[0]
 #		print(f"{self.n}: {self.i}: done")
 
-		self.reset_time = time()
-		self.time_alive = 0
 		self.isdone = False
-		self.hasstarted = False
-		self.hasfinished = False
 
-		return np.array(firstobs)  # reward, done, info can't be included
+		return np.array(obs)  # reward, done, info can't be included
 
 #	def close(self):

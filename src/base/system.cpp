@@ -981,7 +981,7 @@ int64_t time_get()
 int64_t time_freq()
 {
 	using namespace std::chrono_literals;
-	return std::chrono::nanoseconds(1s).count() / 10;
+	return std::chrono::nanoseconds(1s).count();
 }
 
 /* -----  network ----- */

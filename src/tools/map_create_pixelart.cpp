@@ -5,6 +5,7 @@
 #include <engine/shared/datafile.h>
 #include <engine/storage.h>
 #include <game/mapitems.h>
+#include <cstdio>
 
 bool CreatePixelArt(const char[3][64], const int[2], const int[2], int[2], const bool[2]);
 void InsertCurrentQuads(CDataFileReader &, CMapItemLayerQuads *, CQuad *);

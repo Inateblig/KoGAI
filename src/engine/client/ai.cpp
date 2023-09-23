@@ -16,8 +16,11 @@
 
 #include "ai.h"
 
-#define V2F "%d %d"
-#define V2A(V) (int)(V).x, (int)(V).y
+#define V2I "%d %d"
+#define V2AI(V) (int)(V).x, (int)(V).y
+#define V2F "%f %f"
+#define V2A "%a %a"
+#define V2AF(V) (V).x, (V).y
 
 CNetObj_PlayerInput ai_inp;
 float ai_htds[ai_NRAYS], ai_ftds[ai_NRAYS];
@@ -28,6 +31,9 @@ int ai_killtick;
 int ai_waitsreply;
 int ai_rinp_tick, ai_reply_tick;
 bool ai_gotrwd[256];
+float rwdcrctpath;
+//float sum_rwdcrctpath = 0;
+//float sum_rwdwrngpath = 0;
 
 int
 ai_getinp(int tick)
@@ -71,7 +77,7 @@ ai_reply(CCharacter *ch, int tick)
 	CCollision *cln;
 	vec2 ppos, pos, hp, vel;
 	size_t i;
-	int hs;
+	int hs = 0;
 
 	if (!ai_waitsreply)
 		return;
@@ -84,6 +90,8 @@ ai_reply(CCharacter *ch, int tick)
 	ppos = ch->m_PrevPos;
 	hp = core.m_HookPos - pos;
 	vel = core.m_Vel;
+	vel.x = (int)vel.x;
+	vel.y = (int)vel.y;
 	hs = core.m_HookState;
 
 	struct rwdtile {
@@ -128,13 +136,21 @@ ai_reply(CCharacter *ch, int tick)
 
 	vec2 pathv = ai_getareafld(pos.x / 32, pos.y / 32, ai_ASZ);
 	/* correct path reward */
-	int rwdcrctpath = dot(vel, pathv);
+	rwdcrctpath = dot(vel, pathv);
 
-	fprintf(outfifo, V2F " " V2F " " V2F " %d",
-		V2A(vel), V2A(hp), V2A(pathv), hs);
+	vel = vel / 6000.0;
+	hp = hp / 800.0;
+
+	float hsf = hs / 7.0;
+
+	fprintf(outfifo, V2A " " V2A " " V2A " %a",
+		V2AF(vel), V2AF(hp), V2AF(pathv), hsf);
 	for (i = 0; i < NELM(rwdtiles); i++)
 		fprintf(outfifo, " %d", rwdtiles[i].rwd);
-	fprintf(outfifo, " %d", rwdcrctpath);
+	fprintf(outfifo, " %a", rwdcrctpath);
+
+//	printf("vel:" V2I " step: %5f, sumcrct: %5f, sumwrng: %5f\n", V2AI(vel), rwdcrctpath, sum_rwdcrctpath, sum_rwdwrngpath);
+
 	for (i = 0; i < NELM(ai_htds); i++)
 		fprintf(outfifo, " %a", ai_htds[i]);
 	for (i = 0; i < NELM(ai_ftds); i++)
@@ -286,8 +302,9 @@ ai_getareafld(FPARS(int, x, y, asz))
 		af += v;
 		n++;
 	}
-	if (!n)
+	if (n) {
+		return normalize(af / n);
+	}
 retnone:
-		return vec2(0.f, 0.f);
-	return af / n;
+	return vec2(0.f, 0.f);
 }

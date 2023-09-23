@@ -325,6 +325,8 @@ int CControls::SnapInput(int *pData)
 	if (!g_Config.m_ClIgnoreAI) {
 		if (ai_gaveinp) {
 			m_aInputData[g_Config.m_ClDummy] = ai_inp;
+			m_aMousePos[g_Config.m_ClDummy].x = ai_inp.m_TargetX;
+			m_aMousePos[g_Config.m_ClDummy].y = ai_inp.m_TargetY;
 			Send = true;
 			ai_gaveinp = 0;
 		} else {
